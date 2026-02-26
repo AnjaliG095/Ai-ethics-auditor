@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EthosAI — Ethics Auditor</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Mono',monospace;background:#0a0a0f;color:#e8e8f0;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(126,255,196,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(126,255,196,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.wrap{max-width:820px;margin:0 auto;padding:0 20px 60px;position:relative;z-index:1}
+
+/* header */
+header{text-align:center;padding:40px 0 20px}
+.logo{display:inline-flex;align-items:center;gap:10px;margin-bottom:12px}
+.logo-box{width:34px;height:34px;background:#7effc4;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.logo-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#7effc4;letter-spacing:-.5px}
+h1{font-family:'Syne',sans-serif;font-size:clamp(26px,5vw,44px);font-weight:800;letter-spacing:-1px;line-height:1.1;margin-bottom:8px}
+h1 em{font-style:normal;color:#7effc4}
+.sub{color:#6b6b88;font-size:11px;letter-spacing:.06em}
+
+/* step bar */
+.stepbar{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0;row-gap:10px;margin:28px 0 30px}
+.step-item{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b6b88;transition:color .25s}
+.step-item.active{color:#7effc4}
+.step-item.done{color:#6b6b88}
+.snum{width:22px;height:22px;border-radius:50%;border:1px solid #2a2a3a;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .25s;flex-shrink:0}
+.step-item.active .snum{background:#7effc4;border-color:#7effc4;color:#000;font-weight:700}
+.step-item.done .snum{background:#1a1a26;border-color:#7effc4;color:#7effc4}
+.sline{width:28px;height:1px;background:#2a2a3a;margin:0 3px;flex-shrink:0}
+
+/* card */
+.card{background:#111118;border:1px solid #2a2a3a;border-radius:14px;padding:26px 28px;margin-bottom:14px;animation:up .3s ease both}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.ctitle{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:22px;display:flex;align-items:center;gap:9px}
+.ctag{font-size:9px;background:#1a1a26;border:1px solid #2a2a3a;padding:2px 7px;border-radius:4px;color:#6b6b88;letter-spacing:.1em;font-family:'DM Mono',monospace;font-weight:400}
+
+/* form */
+.field{margin-bottom:16px}
+.flabel{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b6b88;margin-bottom:6px}
+input[type=text],textarea,select{width:100%;background:#1a1a26;border:1px solid #2a2a3a;border-radius:8px;color:#e8e8f0;font-family:'DM Mono',monospace;font-size:12px;padding:10px 12px;outline:none;transition:border-color .2s}
+input[type=text]:focus,textarea:focus,select:focus{border-color:#7effc4;box-shadow:0 0 0 2px rgba(126,255,196,.07)}
+textarea{resize:vertical;min-height:72px}
+select option{background:#1a1a26}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.g2{grid-template-columns:1fr}}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:6px 12px;border-radius:6px;border:1px solid #2a2a3a;background:#1a1a26;color:#6b6b88;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .15s;user-select:none}
+.chip:hover{border-color:#7effc4;color:#e8e8f0}
+.chip.on{background:rgba(126,255,196,.1);border-color:#7effc4;color:#7effc4}
+
+/* ── MULTI-CHOICE QUESTIONS ── */
+.qblock{display:flex;flex-direction:column;gap:0}
+.qitem{padding:18px 0;border-bottom:1px solid #1a1a26}
+.qitem:last-child{border-bottom:none}
+.qtext{font-size:13px;color:#e8e8f0;line-height:1.6;margin-bottom:12px;font-weight:500}
+.qnum{color:#7effc4;font-family:'Syne',sans-serif;font-weight:700;margin-right:6px}
+.options{display:flex;flex-direction:column;gap:7px}
+.opt{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid #2a2a3a;background:#1a1a26;cursor:pointer;transition:all .18s;user-select:none}
+.opt:hover{border-color:#7effc4}
+.opt.sel{background:rgba(126,255,196,.1);border-color:#7effc4}
+.opt.sel .opt-dot{background:#7effc4;border-color:#7effc4}
+.opt.sel .opt-label{color:#7effc4}
+.opt-dot{width:14px;height:14px;border-radius:50%;border:1px solid #3a3a4a;background:transparent;flex-shrink:0;transition:all .18s}
+.opt-label{font-size:12px;color:#9a9ab0;flex:1;transition:color .18s}
+.opt-score{font-size:10px;color:#4a4a5a;letter-spacing:.05em;flex-shrink:0}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:12px 24px;border-radius:9px;border:none;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.02em}
+.primary{background:#7effc4;color:#000}
+.primary:hover{background:#9fffda;transform:translateY(-1px);box-shadow:0 8px 20px rgba(126,255,196,.2)}
+.secondary{background:#1a1a26;color:#e8e8f0;border:1px solid #2a2a3a}
+.secondary:hover{border-color:#7effc4}
+.brow{display:flex;gap:9px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+
+/* loading */
+#loading{display:none;text-align:center;padding:60px}
+.spin{width:36px;height:36px;border:2px solid #2a2a3a;border-top-color:#7effc4;border-radius:50%;margin:0 auto 14px;animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.ltxt{color:#6b6b88;font-size:11px;letter-spacing:.1em}
+
+/* ── RESULTS ── */
+#results{display:none}
+.rbanner{border-radius:14px;padding:26px 28px;margin-bottom:14px;position:relative;overflow:hidden;animation:up .4s ease both}
+.rbanner::before{content:'';position:absolute;inset:0;opacity:.05;background:radial-gradient(circle at 20% 50%,currentColor 0%,transparent 60%)}
+.rbanner.low   {background:rgba(126,255,196,.07);border:1px solid rgba(126,255,196,.25);color:#7effc4}
+.rbanner.medium{background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.25);color:#ffd166}
+.rbanner.high  {background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.25);color:#ff6b6b}
+.rhead{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.rcatl{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;opacity:.6;margin-bottom:3px}
+.rcatn{font-family:'Syne',sans-serif;font-size:24px;font-weight:800}
+.rsubn{font-size:10px;opacity:.45;margin-top:3px}
+.rscorebl{text-align:right}
+.rscore{font-family:'Syne',sans-serif;font-size:50px;font-weight:800;line-height:1}
+.rscorel{font-size:9px;opacity:.5;letter-spacing:.12em;text-transform:uppercase}
+.barwrap{height:5px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden}
+.barfill{height:100%;border-radius:99px;transition:width 1s cubic-bezier(.16,1,.3,1);background:currentColor}
+.barmarks{display:flex;justify-content:space-between;margin-top:4px;font-size:9px;opacity:.3;letter-spacing:.06em}
+
+/* pillar cards */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:14px}
+@media(max-width:600px){.pgrid{grid-template-columns:1fr}}
+.pcard{background:#111118;border:1px solid #2a2a3a;border-radius:12px;padding:20px;animation:up .4s ease both}
+.pcard:nth-child(2){animation-delay:.07s}
+.pcard:nth-child(3){animation-delay:.14s}
+.phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.ptitle{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.pscore{font-family:'Syne',sans-serif;font-size:26px;font-weight:800}
+.pbwrap{height:4px;background:#1a1a26;border-radius:99px;overflow:hidden;margin-bottom:9px}
+.pb{height:100%;border-radius:99px;transition:width 1.1s cubic-bezier(.16,1,.3,1)}
+.pbadge{display:inline-block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-weight:600;margin-bottom:8px}
+.b-low {background:rgba(126,255,196,.12);color:#7effc4}
+.b-med {background:rgba(255,209,102,.12);color:#ffd166}
+.b-high{background:rgba(255,107,107,.12);color:#ff6b6b}
+.pnote{font-size:10px;color:#6b6b88;line-height:1.6}
+.qbreakdown{margin-top:10px;border-top:1px solid #1a1a26;padding-top:9px;display:flex;flex-direction:column;gap:6px}
+.qbrow{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#6b6b88}
+.qbrow .qans{flex-shrink:0;font-weight:600;font-size:10px}
+.ans0{color:#7effc4}
+.ans1{color:#ffd166}
+.ans2{color:#ff6b6b}
+
+/* score breakdown table */
+.score-table{width:100%;border-collapse:collapse;margin-top:4px}
+.score-table td{padding:8px 0;font-size:11px;border-bottom:1px solid #1a1a26}
+.score-table tr:last-child td{border-bottom:none}
+.score-table .td-label{color:#6b6b88}
+.score-table .td-val{text-align:right;font-weight:700;font-family:'Syne',sans-serif;font-size:13px}
+
+/* suggestions */
+.suglist{list-style:none}
+.sugitem{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #1a1a26;animation:up .35s ease both}
+.sugitem:last-child{border-bottom:none}
+.sugicon{width:28px;height:28px;border-radius:7px;background:rgba(126,255,196,.07);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.sugtitle{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;margin-bottom:3px}
+.sugdesc{font-size:11px;color:#6b6b88;line-height:1.6}
+.pbadge2{display:inline-block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600}
+.frow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:6px}
+.fmeta{font-size:11px;color:#6b6b88}
+.fmeta strong{color:#e8e8f0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo">
+    <div class="logo-box">⚖</div>
+    <div class="logo-name">EthosAI</div>
+  </div>
+  <h1>AI Ethics <em>Auditor</em></h1>
+  <p class="sub">// context · bias · privacy · safety · report</p>
+</header>
+
+<!-- STEP BAR -->
+<div class="stepbar">
+  <div class="step-item active" id="si1"><div class="snum">1</div><span>Context</span></div>
+  <div class="sline"></div>
+  <div class="step-item" id="si2"><div class="snum">2</div><span>Bias</span></div>
+  <div class="sline"></div>
+  <div class="step-item" id="si3"><div class="snum">3</div><span>Privacy</span></div>
+  <div class="sline"></div>
+  <div class="step-item" id="si4"><div class="snum">4</div><span>Safety</span></div>
+  <div class="sline"></div>
+  <div class="step-item" id="si5"><div class="snum">5</div><span>Report</span></div>
+</div>
+
+<!-- ══════════════════ STEP 1: CONTEXT ══════════════════ -->
+<div id="s1">
+  <div class="card">
+    <div class="ctitle">🤖 Basic Info <span class="ctag">A</span></div>
+    <div class="g2">
+      <div class="field">
+        <label class="flabel">AI Name</label>
+        <input type="text" id="aiName" placeholder="e.g. HireBot, MediScan…">
+      </div>
+      <div class="field">
+        <label class="flabel">Application Type</label>
+        <select id="aiType">
+          <option value="">Select…</option>
+          <option value="chatbot">Chatbot / Virtual Assistant</option>
+          <option value="hiring">Hiring / Recruitment AI</option>
+          <option value="recommendation">Recommendation System</option>
+          <option value="medical">Medical / Health AI</option>
+          <option value="content">Content Generation</option>
+          <option value="surveillance">Surveillance / Monitoring</option>
+          <option value="credit">Credit / Financial Scoring</option>
+          <option value="autonomous">Autonomous System</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="flabel">Purpose / Description</label>
+      <textarea id="purpose" placeholder="What does this AI do? What problem does it solve?"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">🏛️ Domain Sensitivity <span class="ctag">B</span></div>
+    <div class="field">
+      <label class="flabel">Primary Domain</label>
+      <select id="domain">
+        <option value="general">General AI</option>
+        <option value="healthcare">Healthcare</option>
+        <option value="finance">Finance</option>
+        <option value="hiring">Hiring</option>
+        <option value="education">Education</option>
+        <option value="customer_support">Customer Support</option>
+        <option value="surveillance">Surveillance</option>
+        <option value="autonomous">Autonomous System</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">🗄️ Data Used <span class="ctag">C</span></div>
+    <label class="flabel">Select all that apply</label>
+    <div class="chips" id="dataChips">
+      <div class="chip" onclick="this.classList.toggle('on')">Personal Data</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Biometric Data</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Financial Data</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Medical Records</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Location Data</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Behavioral Data</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Public Data</div>
+      <div class="chip" onclick="this.classList.toggle('on')">User-Generated</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">👥 Target Users <span class="ctag">D</span></div>
+    <label class="flabel">Select all that apply</label>
+    <div class="chips" id="userChips">
+      <div class="chip" onclick="this.classList.toggle('on')">General Public</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Children</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Vulnerable Groups</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Patients</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Employees</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Job Seekers</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Enterprises</div>
+    </div>
+  </div>
+
+  <div class="brow">
+    <button class="btn primary" onclick="goStep(2)">Next: Bias Questions →</button>
+  </div>
+</div>
+
+<!-- ══════════════════ STEP 2: BIAS ══════════════════ -->
+<div id="s2" style="display:none">
+  <div class="card">
+    <div class="ctitle">⚖️ Bias Assessment <span class="ctag">STEP 02</span></div>
+    <div class="qblock">
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q1.</span>Have you ever felt that this AI responds unfairly or differently to certain people or groups?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('b1',0,this)"><div class="opt-dot"></div><div class="opt-label">Never</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('b1',1,this)"><div class="opt-dot"></div><div class="opt-label">Not sure</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('b1',2,this)"><div class="opt-dot"></div><div class="opt-label">Yes, sometimes</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q2.</span>Has the AI ever given responses that seemed stereotypical, offensive, or biased?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('b2',0,this)"><div class="opt-dot"></div><div class="opt-label">Never</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('b2',1,this)"><div class="opt-dot"></div><div class="opt-label">Rarely</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('b2',2,this)"><div class="opt-dot"></div><div class="opt-label">Often</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q3.</span>Do you notice the AI giving different answers for similar questions asked by different users?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('b3',0,this)"><div class="opt-dot"></div><div class="opt-label">No</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('b3',1,this)"><div class="opt-dot"></div><div class="opt-label">Not sure</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('b3',2,this)"><div class="opt-dot"></div><div class="opt-label">Yes</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q4.</span>Do you trust this AI to treat all users fairly regardless of gender, age, or background?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('b4',0,this)"><div class="opt-dot"></div><div class="opt-label">Yes</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('b4',1,this)"><div class="opt-dot"></div><div class="opt-label">Not sure</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('b4',2,this)"><div class="opt-dot"></div><div class="opt-label">No</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="brow">
+    <button class="btn secondary" onclick="goStep(1)">← Back</button>
+    <button class="btn primary" onclick="goStep(3)">Next: Privacy →</button>
+  </div>
+</div>
+
+<!-- ══════════════════ STEP 3: PRIVACY ══════════════════ -->
+<div id="s3" style="display:none">
+  <div class="card">
+    <div class="ctitle">🔐 Privacy Assessment <span class="ctag">STEP 03</span></div>
+    <div class="qblock">
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q1.</span>Does this AI ask for or collect your personal information (such as name, email, location, etc.)?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('p1',0,this)"><div class="opt-dot"></div><div class="opt-label">No</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('p1',1,this)"><div class="opt-dot"></div><div class="opt-label">Not sure</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('p1',2,this)"><div class="opt-dot"></div><div class="opt-label">Yes</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q2.</span>Do you feel comfortable sharing your personal data with this AI?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('p2',0,this)"><div class="opt-dot"></div><div class="opt-label">Yes</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('p2',1,this)"><div class="opt-dot"></div><div class="opt-label">Not sure</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('p2',2,this)"><div class="opt-dot"></div><div class="opt-label">No</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q3.</span>Has the AI ever asked for sensitive information that seemed unnecessary?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('p3',0,this)"><div class="opt-dot"></div><div class="opt-label">Never</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('p3',1,this)"><div class="opt-dot"></div><div class="opt-label">Not sure</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('p3',2,this)"><div class="opt-dot"></div><div class="opt-label">Yes</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q4.</span>Do you trust that your data is handled securely and not misused by this AI?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('p4',0,this)"><div class="opt-dot"></div><div class="opt-label">Yes</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('p4',1,this)"><div class="opt-dot"></div><div class="opt-label">Not sure</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('p4',2,this)"><div class="opt-dot"></div><div class="opt-label">No</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="brow">
+    <button class="btn secondary" onclick="goStep(2)">← Back</button>
+    <button class="btn primary" onclick="goStep(4)">Next: Safety →</button>
+  </div>
+</div>
+
+<!-- ══════════════════ STEP 4: SAFETY ══════════════════ -->
+<div id="s4" style="display:none">
+  <div class="card">
+    <div class="ctitle">🛡️ Safety Assessment <span class="ctag">STEP 04</span></div>
+    <div class="qblock">
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q1.</span>Could incorrect or misleading answers from this AI cause harm or serious problems?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('s1',0,this)"><div class="opt-dot"></div><div class="opt-label">No</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('s1',1,this)"><div class="opt-dot"></div><div class="opt-label">Not sure</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('s1',2,this)"><div class="opt-dot"></div><div class="opt-label">Yes</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q2.</span>Have you ever received inaccurate or harmful suggestions from this AI?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('s2',0,this)"><div class="opt-dot"></div><div class="opt-label">Never</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('s2',1,this)"><div class="opt-dot"></div><div class="opt-label">Rarely</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('s2',2,this)"><div class="opt-dot"></div><div class="opt-label">Yes</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q3.</span>Do you feel the need to verify important information given by this AI before acting on it?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('s3',0,this)"><div class="opt-dot"></div><div class="opt-label">No</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('s3',1,this)"><div class="opt-dot"></div><div class="opt-label">Sometimes</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('s3',2,this)"><div class="opt-dot"></div><div class="opt-label">Yes</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q4.</span>Do you think using this AI without human supervision could be risky?</div>
+        <div class="options">
+          <div class="opt" onclick="pick('s4',0,this)"><div class="opt-dot"></div><div class="opt-label">No</div><div class="opt-score">0 pts</div></div>
+          <div class="opt" onclick="pick('s4',1,this)"><div class="opt-dot"></div><div class="opt-label">Not sure</div><div class="opt-score">1 pt</div></div>
+          <div class="opt" onclick="pick('s4',2,this)"><div class="opt-dot"></div><div class="opt-label">Yes</div><div class="opt-score">2 pts</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="brow">
+    <button class="btn secondary" onclick="goStep(3)">← Back</button>
+    <button class="btn primary" onclick="runReport()">Generate Report ⚡</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="spin"></div>
+  <p class="ltxt">// computing ethics report…</p>
+</div>
+
+<!-- ══════════════════ STEP 5: REPORT ══════════════════ -->
+<div id="results">
+
+  <!-- Overall Banner -->
+  <div class="rbanner" id="rbanner">
+    <div class="rhead">
+      <div>
+        <div class="rcatl">Overall Ethics Risk</div>
+        <div class="rcatn" id="rcatn">—</div>
+        <div class="rsubn" id="rsubn">—</div>
+      </div>
+      <div class="rscorebl">
+        <div class="rscore" id="rscore">—</div>
+        <div class="rscorel">Total Score / 24</div>
+      </div>
+    </div>
+    <div class="barwrap"><div class="barfill" id="rbarfill" style="width:0%"></div></div>
+    <div class="barmarks"><span>0 — LOW</span><span>12</span><span>HIGH — 24</span></div>
+  </div>
+
+  <!-- 3 Pillar Cards -->
+  <div class="pgrid" id="pgrid"></div>
+
+  <!-- Score Summary Table -->
+  <div class="card" style="animation-delay:.2s">
+    <div class="ctitle">🧮 Score Breakdown <span class="ctag">CALCULATION</span></div>
+    <table class="score-table" id="scoreTable"></table>
+  </div>
+
+  <!-- Recommendations -->
+  <div class="card" style="animation-delay:.28s">
+    <div class="ctitle">💡 Recommendations <span class="ctag">ACTION PLAN</span></div>
+    <ul class="suglist" id="suglist"></ul>
+  </div>
+
+  <div class="frow">
+    <div class="fmeta">Audited: <strong id="rname">—</strong> &nbsp;|&nbsp; Domain: <strong id="rdomain">—</strong></div>
+    <button class="btn secondary" onclick="restart()">← New Audit</button>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+// ── answer store: { id: score_value } ──
+var ANS = {};
+
+// ── step navigation ──────────────────────────────────
+function goStep(n) {
+  for (var i = 1; i <= 4; i++) {
+    document.getElementById('s' + i).style.display = (i === n) ? 'block' : 'none';
+  }
+  document.getElementById('results').style.display = 'none';
+  updateBar(n);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateBar(active) {
+  for (var i = 1; i <= 5; i++) {
+    var el = document.getElementById('si' + i);
+    el.classList.remove('active', 'done');
+    if (i < active)  el.classList.add('done');
+    if (i === active) el.classList.add('active');
+  }
+}
+
+// ── option picker ────────────────────────────────────
+function pick(qid, val, el) {
+  // deselect all options in the same qitem
+  var siblings = el.parentElement.querySelectorAll('.opt');
+  for (var i = 0; i < siblings.length; i++) {
+    siblings[i].classList.remove('sel');
+  }
+  el.classList.add('sel');
+  ANS[qid] = val;
+}
+
+// ── get active chips ─────────────────────────────────
+function getChips(id) {
+  var result = [];
+  var all = document.querySelectorAll('#' + id + ' .chip.on');
+  for (var i = 0; i < all.length; i++) {
+    result.push(all[i].textContent.trim());
+  }
+  return result;
+}
+
+// ── score a pillar (4 questions, each 0/1/2) ─────────
+function scorePillar(ids) {
+  var total = 0;
+  var details = [];
+  for (var i = 0; i < ids.length; i++) {
+    var v = (ANS[ids[i]] !== undefined) ? ANS[ids[i]] : 0;
+    total += v;
+    details.push({ id: ids[i], val: v });
+  }
+  return { score: total, details: details };
+}
+
+// ── risk level from score (0-8 per pillar) ───────────
+function riskLevel(score) {
+  if (score <= 2) return 'low';
+  if (score <= 5) return 'medium';
+  return 'high';
+}
+function riskLabel(score) {
+  if (score <= 2) return 'Low Risk ✅';
+  if (score <= 5) return 'Medium Risk ⚠️';
+  return 'High Risk 🚨';
+}
+function riskColor(score) {
+  if (score <= 2) return '#7effc4';
+  if (score <= 5) return '#ffd166';
+  return '#ff6b6b';
+}
+function bCls(score) {
+  if (score <= 2) return 'b-low';
+  if (score <= 5) return 'b-med';
+  return 'b-high';
+}
+
+var DOMAIN_LABEL = {
+  healthcare:'Healthcare', finance:'Finance', hiring:'Hiring',
+  education:'Education', customer_support:'Customer Support',
+  surveillance:'Surveillance', autonomous:'Autonomous System', general:'General AI'
+};
+
+var Q_LABELS = {
+  b1:'Unfair to certain groups?', b2:'Stereotypical/offensive?',
+  b3:'Different answers per user?', b4:'Trusts fairness?',
+  p1:'Collects personal info?', p2:'Comfortable sharing data?',
+  p3:'Asked unnecessary data?', p4:'Trusts data security?',
+  s1:'Can wrong output cause harm?', s2:'Received harmful suggestions?',
+  s3:'Need to verify before acting?', s4:'Risky without supervision?'
+};
+
+// ── pillar notes ─────────────────────────────────────
+function getNote(pillar, score) {
+  var notes = {
+    bias: [
+      'Low bias detected. The AI appears to treat users fairly across groups.',
+      'Moderate bias risk. Some inconsistencies or unfair patterns may exist.',
+      'High bias risk. The AI shows signs of unfair treatment — urgent review needed.'
+    ],
+    privacy: [
+      'Privacy risk is low. Data handling appears appropriate.',
+      'Moderate privacy concern. Review what data is collected and how it is used.',
+      'High privacy risk. Data collection or handling practices need immediate attention.'
+    ],
+    safety: [
+      'Safety risk is low. The AI appears to operate within safe boundaries.',
+      'Moderate safety concern. Human oversight is recommended for key decisions.',
+      'High safety risk. Incorrect outputs could cause harm — safeguards are critical.'
+    ]
+  };
+  var lvl = score <= 2 ? 0 : score <= 5 ? 1 : 2;
+  return notes[pillar][lvl];
+}
+
+// ── main report ──────────────────────────────────────
+function runReport() {
+  for (var i = 1; i <= 4; i++) {
+    document.getElementById('s' + i).style.display = 'none';
+  }
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+
+  setTimeout(function() {
+    document.getElementById('loading').style.display = 'none';
+
+    var name   = document.getElementById('aiName').value.trim() || 'Unnamed AI';
+    var domain = document.getElementById('domain').value || 'general';
+    var dataUsed = getChips('dataChips');
+    var users    = getChips('userChips');
+
+    // score each pillar
+    var bias    = scorePillar(['b1','b2','b3','b4']);
+    var privacy = scorePillar(['p1','p2','p3','p4']);
+    var safety  = scorePillar(['s1','s2','s3','s4']);
+
+    var totalScore = bias.score + privacy.score + safety.score; // max = 24
+    var pct = Math.round((totalScore / 24) * 100);
+
+    // overall risk based on total (0-24)
+    var overallCat = totalScore <= 7 ? 'low' : totalScore <= 15 ? 'medium' : 'high';
+    var overallLabel = { low: 'LOW RISK', medium: 'MEDIUM RISK', high: 'HIGH RISK' };
+
+    // ── banner ──
+    document.getElementById('results').style.display = 'block';
+    updateBar(5);
+
+    document.getElementById('rbanner').className = 'rbanner ' + overallCat;
+    document.getElementById('rcatn').textContent  = overallLabel[overallCat];
+    document.getElementById('rsubn').textContent  = name + '  ·  ' + (DOMAIN_LABEL[domain] || 'General AI');
+    document.getElementById('rscore').textContent = totalScore;
+    document.getElementById('rname').textContent  = name;
+    document.getElementById('rdomain').textContent = DOMAIN_LABEL[domain] || 'General AI';
+
+    setTimeout(function() {
+      document.getElementById('rbarfill').style.width = pct + '%';
+    }, 120);
+
+    // ── 3 pillar cards ──
+    var pillars = [
+      { key: 'bias',    icon: '⚖️',  label: 'Bias',    data: bias    },
+      { key: 'privacy', icon: '🔐', label: 'Privacy', data: privacy },
+      { key: 'safety',  icon: '🛡️',  label: 'Safety',  data: safety  }
+    ];
+
+    var pgHtml = '';
+    for (var pi = 0; pi < pillars.length; pi++) {
+      var p = pillars[pi];
+      var sc = p.data.score;
+      var col = riskColor(sc);
+      var barPct = Math.round((sc / 8) * 100);
+
+      var breakdown = '';
+      for (var di = 0; di < p.data.details.length; di++) {
+        var d = p.data.details[di];
+        var qnum = 'Q' + (di + 1);
+        var short = Q_LABELS[d.id] || d.id;
+        var ansCls = d.val === 0 ? 'ans0' : d.val === 1 ? 'ans1' : 'ans2';
+        var ansLbl = d.val + ' pt' + (d.val !== 1 ? 's' : '');
+        breakdown += '<div class="qbrow"><span>' + qnum + ': ' + short + '</span><span class="qans ' + ansCls + '">' + ansLbl + '</span></div>';
+      }
+
+      pgHtml += '<div class="pcard" style="animation-delay:' + (pi * 0.08) + 's">' +
+        '<div class="phead">' +
+          '<div class="ptitle">' + p.icon + ' ' + p.label + '</div>' +
+          '<div class="pscore" style="color:' + col + '">' + sc + '<span style="font-size:12px;opacity:.4">/8</span></div>' +
+        '</div>' +
+        '<div class="pbwrap"><div class="pb" id="pb_' + p.key + '" style="width:0%;background:' + col + '"></div></div>' +
+        '<span class="pbadge ' + bCls(sc) + '">' + riskLabel(sc) + '</span>' +
+        '<div class="pnote">' + getNote(p.key, sc) + '</div>' +
+        '<div class="qbreakdown">' + breakdown + '</div>' +
+      '</div>';
+    }
+    document.getElementById('pgrid').innerHTML = pgHtml;
+
+    setTimeout(function() {
+      for (var pi2 = 0; pi2 < pillars.length; pi2++) {
+        var el = document.getElementById('pb_' + pillars[pi2].key);
+        var sc2 = pillars[pi2].data.score;
+        if (el) el.style.width = Math.round((sc2 / 8) * 100) + '%';
+      }
+    }, 200);
+
+    // ── score summary table ──
+    var tHtml =
+      '<tr><td class="td-label">⚖️ Bias Score</td><td class="td-val" style="color:' + riskColor(bias.score) + '">' + bias.score + ' / 8 &nbsp; <span style="font-size:10px">(' + riskLabel(bias.score) + ')</span></td></tr>' +
+      '<tr><td class="td-label">🔐 Privacy Score</td><td class="td-val" style="color:' + riskColor(privacy.score) + '">' + privacy.score + ' / 8 &nbsp; <span style="font-size:10px">(' + riskLabel(privacy.score) + ')</span></td></tr>' +
+      '<tr><td class="td-label">🛡️ Safety Score</td><td class="td-val" style="color:' + riskColor(safety.score) + '">' + safety.score + ' / 8 &nbsp; <span style="font-size:10px">(' + riskLabel(safety.score) + ')</span></td></tr>' +
+      '<tr style="border-top:1px solid #2a2a3a"><td class="td-label" style="font-weight:700;color:#e8e8f0">Total Risk Score</td><td class="td-val" style="color:' + riskColor(totalScore <= 7 ? 0 : totalScore <= 15 ? 4 : 7) + '">' + totalScore + ' / 24</td></tr>';
+    document.getElementById('scoreTable').innerHTML = tHtml;
+
+    // ── suggestions ──
+    var sugs = [];
+    function addS(icon, title, desc, prio) { sugs.push({ icon: icon, title: title, desc: desc, prio: prio }); }
+
+    if (bias.score >= 3)
+      addS('⚖️', 'Address Bias Issues',
+        bias.score >= 6
+          ? 'High bias detected. Conduct an urgent bias audit, diversify training data, and test outputs across demographic groups using IBM AI Fairness 360.'
+          : 'Moderate bias signals found. Review model outputs across user groups and set up fairness monitoring dashboards.',
+        bias.score >= 6 ? 'high' : 'medium');
+
+    if (privacy.score >= 3)
+      addS('🔐', 'Strengthen Privacy Practices',
+        privacy.score >= 6
+          ? 'Critical privacy risk. Immediately review what data is collected, ensure consent is obtained, and enforce encryption at rest and in transit.'
+          : 'Some privacy concerns. Audit data collection points, review consent flows, and ensure only necessary data is stored.',
+        privacy.score >= 6 ? 'high' : 'medium');
+
+    if (safety.score >= 3)
+      addS('🛡️', 'Improve Safety Safeguards',
+        safety.score >= 6
+          ? 'High safety risk identified. Add human-in-the-loop review for critical outputs, implement fail-safe mechanisms, and restrict unsupervised deployment.'
+          : 'Moderate safety concern. Add warning labels on AI outputs for important decisions and consider human review for high-stakes use cases.',
+        safety.score >= 6 ? 'high' : 'medium');
+
+    // context-based suggestions
+    var sensData = ['Biometric Data','Medical Records','Financial Data','Location Data','Behavioral Data'];
+    var vulnUsers = ['Children','Vulnerable Groups','Patients'];
+    var senCount = 0;
+    for (var di2 = 0; di2 < dataUsed.length; di2++) {
+      if (sensData.indexOf(dataUsed[di2]) >= 0) senCount++;
+    }
+    var vulnCount = 0;
+    for (var ui = 0; ui < users.length; ui++) {
+      if (vulnUsers.indexOf(users[ui]) >= 0) vulnCount++;
+    }
+
+    if (senCount > 0)
+      addS('📋', 'Data Governance Policy',
+        senCount + ' sensitive data type(s) detected. Conduct a Data Protection Impact Assessment (DPIA) and ensure GDPR/CCPA compliance.',
+        senCount > 2 ? 'high' : 'medium');
+
+    if (vulnCount > 0)
+      addS('👥', 'Protect Vulnerable Users',
+        'Vulnerable populations are in scope. Add extra consent flows, simplify interfaces, and consult safeguarding or child safety experts.',
+        'high');
+
+    if (sugs.length === 0)
+      addS('✅', 'All Clear — Keep It Up!',
+        'Your AI scores well across all three ethical dimensions. Continue periodic reviews and document your processes.',
+        'low');
+
+    var prioCls = { high: 'b-high', medium: 'b-med', low: 'b-low' };
+    var sugHtml = '';
+    for (var si2 = 0; si2 < sugs.length; si2++) {
+      var s = sugs[si2];
+      sugHtml += '<li class="sugitem" style="animation-delay:' + (si2 * 0.07) + 's">' +
+        '<div class="sugicon">' + s.icon + '</div>' +
+        '<div>' +
+          '<div class="sugtitle">' + s.title +
+            '<span class="pbadge2 ' + prioCls[s.prio] + '">' + s.prio.toUpperCase() + '</span>' +
+          '</div>' +
+          '<div class="sugdesc">' + s.desc + '</div>' +
+        '</div>' +
+      '</li>';
+    }
+    document.getElementById('suglist').innerHTML = sugHtml;
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 1000);
+}
+
+// ── restart ──────────────────────────────────────────
+function restart() {
+  ANS = {};
+  var opts = document.querySelectorAll('.opt');
+  for (var i = 0; i < opts.length; i++) opts[i].classList.remove('sel');
+  var chips = document.querySelectorAll('.chip');
+  for (var j = 0; j < chips.length; j++) chips[j].classList.remove('on');
+  document.getElementById('aiName').value  = '';
+  document.getElementById('purpose').value = '';
+  document.getElementById('aiType').value  = '';
+  document.getElementById('domain').value  = 'general';
+  document.getElementById('results').style.display = 'none';
+  goStep(1);
+}
+</script>
+</body>
+</html>
