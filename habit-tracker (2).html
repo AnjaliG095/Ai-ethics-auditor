@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monthly Habit Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal-dark: #1a5f7a;
+    --teal-mid: #2a8fad;
+    --teal-light: #4bbfd4;
+    --teal-pale: #c8eaf0;
+    --green: #3aaf85;
+    --green-light: #b6e8d7;
+    --blue-dark: #1e3a5f;
+    --blue-mid: #2e6da4;
+    --purple: #7b6fa0;
+    --purple-light: #d4cfe8;
+    --gray-bg: #f0f4f7;
+    --gray-border: #d0dce6;
+    --white: #ffffff;
+    --text-dark: #1a2a3a;
+    --text-mid: #4a6070;
+    --text-light: #8a9ab0;
+    --red: #e05050;
+    --yellow: #f5c842;
+    --shadow: 0 4px 20px rgba(26,95,122,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--gray-bg);
+    color: var(--text-dark);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .page-wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, var(--teal-dark) 0%, var(--blue-dark) 100%);
+    color: white;
+    text-align: center;
+    padding: 22px 30px;
+    position: relative;
+  }
+  .header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 4px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .header-actions {
+    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+    display: flex; gap: 8px;
+  }
+  .btn {
+    padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 0.8rem;
+    transition: all 0.2s;
+  }
+  .btn-white { background: white; color: var(--teal-dark); }
+  .btn-white:hover { background: var(--teal-pale); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { opacity: 0.85; }
+  .btn-teal { background: var(--teal-mid); color: white; }
+  .btn-teal:hover { background: var(--teal-dark); }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr 160px 200px;
+    gap: 0;
+    padding: 16px;
+    align-items: start;
+  }
+
+  /* LEFT PANEL */
+  .left-panel {
+    background: var(--gray-bg);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--gray-border);
+  }
+  .meta-row { margin-bottom: 10px; }
+  .meta-label { font-size: 0.72rem; font-weight: 700; color: var(--text-mid); text-transform: uppercase; letter-spacing: 1px; }
+  .meta-val { font-size: 0.9rem; font-weight: 600; color: var(--text-dark); }
+  .meta-input {
+    width: 100%; padding: 6px 8px; border-radius: 7px; border: 1.5px solid var(--gray-border);
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--text-dark);
+    background: white; margin-top: 2px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .meta-input:focus { border-color: var(--teal-mid); }
+  .meta-select {
+    width: 100%; padding: 6px 8px; border-radius: 7px; border: 1.5px solid var(--gray-border);
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--text-dark);
+    background: white; margin-top: 2px; outline: none; cursor: pointer;
+  }
+  .divider { height: 1px; background: var(--gray-border); margin: 12px 0; }
+  .days-badge {
+    text-align: center; padding: 10px; background: var(--teal-dark); color: white;
+    border-radius: 10px; margin-top: 10px;
+  }
+  .days-badge .big-num { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; line-height: 1; }
+  .days-badge .lbl { font-size: 0.7rem; letter-spacing: 1px; opacity: 0.8; }
+
+  /* CHART AREA */
+  .chart-area {
+    background: linear-gradient(180deg, var(--teal-dark) 0%, var(--teal-mid) 100%);
+    border-radius: 12px;
+    margin: 0 12px;
+    padding: 16px 16px 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  #barChart {
+    width: 100%; height: 160px; display: block;
+  }
+  .day-numbers {
+    display: flex; justify-content: space-between;
+    padding: 4px 0 0; font-size: 0.6rem; color: rgba(255,255,255,0.7);
+  }
+
+  /* SUCCESS RATE */
+  .success-panel {
+    text-align: center; padding: 10px;
+    border-radius: 12px; border: 1px solid var(--gray-border);
+    background: var(--white);
+  }
+  .success-label {
+    font-size: 0.65rem; font-weight: 700; color: var(--text-mid);
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;
+    background: var(--teal-dark); color: white; padding: 3px 8px; border-radius: 4px; display: inline-block;
+  }
+  .success-pct {
+    font-family: 'Bebas Neue', sans-serif; font-size: 3rem; color: var(--teal-dark);
+    line-height: 1; border: 3px solid var(--teal-dark); border-radius: 10px;
+    padding: 4px 16px; display: inline-block; margin: 6px 0;
+  }
+  .success-msg {
+    font-size: 0.75rem; font-weight: 700; color: var(--text-mid); text-transform: uppercase; letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* RIGHT DONUT PANELS */
+  .right-panels { display: flex; flex-direction: column; gap: 10px; }
+  .donut-panel {
+    border-radius: 12px; padding: 12px 14px;
+    text-align: center;
+  }
+  .dp-monthly { background: var(--teal-dark); color: white; }
+  .dp-normalized { background: var(--green); color: white; }
+  .dp-momentum { background: var(--purple); color: white; }
+  .donut-title {
+    font-size: 0.62rem; font-weight: 700; letter-spacing: 1.2px;
+    text-transform: uppercase; margin-bottom: 8px; opacity: 0.9;
+  }
+  .donut-wrap { position: relative; display: inline-block; }
+  .donut-wrap canvas { display: block; }
+  .donut-center {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    text-align: center; pointer-events: none;
+  }
+  .donut-pct { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; }
+  .donut-sub { font-size: 0.55rem; opacity: 0.85; }
+
+  /* HABIT TABLE */
+  .table-wrap {
+    padding: 12px 16px;
+    overflow-x: auto;
+  }
+  .habit-table {
+    width: 100%; border-collapse: collapse; font-size: 0.78rem;
+  }
+  .habit-table th {
+    background: var(--teal-dark); color: white; padding: 8px 6px;
+    text-align: center; font-weight: 600; font-size: 0.68rem;
+    white-space: nowrap;
+  }
+  .habit-table th.habit-col { text-align: left; padding-left: 10px; min-width: 110px; }
+  .habit-table th.goal-col { min-width: 50px; }
+  .habit-table th.progress-col { min-width: 120px; text-align: left; padding-left: 6px; }
+  .habit-table td { padding: 5px 4px; text-align: center; border-bottom: 1px solid var(--gray-border); }
+  .habit-table tr:last-child td { border-bottom: none; }
+  .habit-table tr:hover td { background: var(--teal-pale); }
+
+  .habit-name-cell { text-align: left !important; padding-left: 10px !important; font-weight: 600; }
+  .habit-name-input {
+    border: none; background: transparent; font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem; font-weight: 600; color: var(--text-dark); width: 100%;
+    outline: none; cursor: pointer;
+  }
+  .habit-name-input:focus { background: white; border-bottom: 2px solid var(--teal-mid); }
+  .goal-input {
+    width: 40px; border: 1.5px solid var(--gray-border); border-radius: 5px;
+    text-align: center; font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+    font-weight: 600; color: var(--text-dark); padding: 3px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .goal-input:focus { border-color: var(--teal-mid); }
+
+  .day-cell { cursor: pointer; border-radius: 4px; transition: background 0.15s; }
+  .day-cell:hover { background: var(--teal-pale) !important; }
+  .day-cell.checked {
+    background: var(--teal-mid) !important;
+    color: white;
+  }
+  .day-cell.checked::after { content: '✕'; font-size: 0.75rem; color: white; font-weight: 700; }
+  .day-cell.weekend { background: #f5f8fb; }
+
+  .progress-cell { text-align: left !important; padding-left: 6px !important; }
+  .progress-bar-wrap { display: flex; align-items: center; gap: 6px; }
+  .progress-bar-bg {
+    flex: 1; height: 10px; background: var(--gray-border); border-radius: 6px; overflow: hidden;
+  }
+  .progress-bar-fill { height: 100%; border-radius: 6px; transition: width 0.4s; }
+  .progress-pct { font-size: 0.72rem; font-weight: 700; min-width: 32px; }
+
+  .day-header { font-size: 0.6rem; }
+  .day-num { font-size: 0.65rem; font-weight: 700; }
+  .day-ltr { font-size: 0.55rem; opacity: 0.75; }
+
+  /* BOTTOM ROW */
+  .bottom-row {
+    display: grid; grid-template-columns: 200px 1fr 160px 200px;
+    padding: 6px 16px 16px; gap: 0; align-items: end;
+  }
+  .bottom-hint {
+    font-size: 0.7rem; color: var(--text-mid); line-height: 1.5;
+    padding-right: 12px;
+  }
+  .bottom-bar-chart {
+    display: flex; gap: 4px; align-items: flex-end; height: 50px;
+    padding: 0 12px;
+  }
+  .bbc-col { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
+  .bbc-bar {
+    width: 100%; background: var(--teal-dark); border-radius: 3px 3px 0 0;
+    transition: height 0.4s;
+  }
+  .bbc-lbl { font-size: 0.6rem; color: var(--text-mid); font-weight: 600; }
+  .total-panel {
+    text-align: center; padding: 6px; color: var(--text-mid);
+  }
+  .total-big { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; color: var(--teal-dark); line-height: 1; }
+  .total-sub { font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; }
+
+  /* ADD HABIT ROW */
+  .add-habit-row td { background: #f8fbfc !important; }
+  .add-btn {
+    background: none; border: 2px dashed var(--teal-light); color: var(--teal-mid);
+    border-radius: 7px; padding: 5px 14px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem; font-weight: 600; transition: all 0.2s; width: 100%;
+  }
+  .add-btn:hover { background: var(--teal-pale); border-style: solid; }
+
+  .del-btn {
+    background: none; border: none; cursor: pointer; color: var(--text-light);
+    font-size: 1rem; line-height: 1; padding: 2px 4px; border-radius: 4px;
+    transition: color 0.2s;
+  }
+  .del-btn:hover { color: var(--red); }
+
+  .today-col { background: rgba(75,191,212,0.12) !important; }
+  .today-header { background: var(--teal-light) !important; color: var(--teal-dark) !important; }
+
+  /* MODAL */
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 999; align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: white; border-radius: 16px; padding: 28px 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25); min-width: 340px; max-width: 400px;
+  }
+  .modal h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: var(--teal-dark); margin-bottom: 16px; letter-spacing: 2px; }
+  .modal label { font-size: 0.8rem; font-weight: 600; color: var(--text-mid); display: block; margin-bottom: 4px; margin-top: 12px; }
+  .modal input {
+    width: 100%; padding: 10px 12px; border: 2px solid var(--gray-border); border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  .modal input:focus { border-color: var(--teal-mid); }
+  .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-btns .btn { flex: 1; padding: 10px; font-size: 0.9rem; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--teal-dark); color: white;
+    padding: 12px 20px; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+    opacity: 0; transform: translateY(10px); transition: all 0.3s; pointer-events: none;
+    z-index: 9999;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 900px) {
+    .main-grid, .bottom-row { grid-template-columns: 1fr; }
+    .right-panels { flex-direction: row; flex-wrap: wrap; }
+    .donut-panel { flex: 1; min-width: 120px; }
+    body { padding: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <!-- HEADER -->
+  <div class="header">
+    <h1>Monthly Habit Tracker</h1>
+    <div class="header-actions">
+      <button class="btn btn-white" onclick="saveData()">💾 Save</button>
+      <button class="btn btn-white" onclick="exportCSV()">📊 Export</button>
+      <button class="btn btn-danger" onclick="confirmReset()">🗑 Reset</button>
+    </div>
+  </div>
+
+  <!-- TOP ROW -->
+  <div class="main-grid">
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+      <div class="meta-row">
+        <div class="meta-label">Year</div>
+        <input class="meta-input" id="selYear" type="number" min="2000" max="2100" value="2025" onchange="rebuildAll()">
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Month</div>
+        <select class="meta-select" id="selMonth" onchange="rebuildAll()">
+          <option value="0">January</option><option value="1">February</option>
+          <option value="2">March</option><option value="3">April</option>
+          <option value="4">May</option><option value="5">June</option>
+          <option value="6">July</option><option value="7">August</option>
+          <option value="8">September</option><option value="9">October</option>
+          <option value="10">November</option><option value="11">December</option>
+        </select>
+      </div>
+      <div class="divider"></div>
+      <div class="meta-row"><div class="meta-label">Start Date</div><div class="meta-val" id="startDate">–</div></div>
+      <div class="meta-row"><div class="meta-label">End Date</div><div class="meta-val" id="endDate">–</div></div>
+      <div class="days-badge">
+        <div class="big-num" id="totalDaysNum">31</div>
+        <div class="lbl">TOTAL DAYS</div>
+      </div>
+    </div>
+
+    <!-- BAR CHART -->
+    <div class="chart-area">
+      <canvas id="barChart"></canvas>
+      <div class="day-numbers" id="dayNumbers"></div>
+    </div>
+
+    <!-- SUCCESS RATE -->
+    <div class="success-panel">
+      <div class="success-label">Success Rate</div>
+      <div class="success-pct" id="successPct">0%</div>
+      <div id="successIcon" style="font-size:1.2rem;margin:4px 0;">😐</div>
+      <div class="success-msg" id="successMsg">START NOW</div>
+    </div>
+
+    <!-- RIGHT DONUTS -->
+    <div class="right-panels">
+      <div class="donut-panel dp-monthly">
+        <div class="donut-title">Monthly Progress</div>
+        <div class="donut-wrap">
+          <canvas id="donut1" width="90" height="90"></canvas>
+          <div class="donut-center">
+            <div class="donut-pct" id="d1pct">0%</div>
+            <div class="donut-sub">done</div>
+          </div>
+        </div>
+      </div>
+      <div class="donut-panel dp-normalized">
+        <div class="donut-title">Days Progress Normalized</div>
+        <div class="donut-wrap">
+          <canvas id="donut2" width="90" height="90"></canvas>
+          <div class="donut-center">
+            <div class="donut-pct" id="d2pct">0%</div>
+            <div class="donut-sub">vs days</div>
+          </div>
+        </div>
+      </div>
+      <div class="donut-panel dp-momentum">
+        <div class="donut-title">Last 3 Days Momentum</div>
+        <div class="donut-wrap">
+          <canvas id="donut3" width="90" height="90"></canvas>
+          <div class="donut-center">
+            <div class="donut-pct" id="d3pct">0%</div>
+            <div class="donut-sub">recent</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HABIT TABLE -->
+  <div class="table-wrap">
+    <table class="habit-table" id="habitTable">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="bottom-row">
+    <div class="bottom-hint">In the sections above, briefly describe the habits you aim to develop. Additionally, enter your monthly targets for how often you plan to maintain these habits.</div>
+    <div class="bottom-bar-chart" id="bottomBarChart"></div>
+    <div class="total-panel">
+      <div class="total-big" id="totalCompleted">0/0</div>
+      <div class="total-sub">COMPLETED</div>
+    </div>
+    <div style="display:flex;gap:8px;padding:0 0 0 8px;align-items:center;">
+      <button class="btn btn-teal" onclick="openAddModal()" style="flex:1">+ Add Habit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD HABIT MODAL -->
+<div class="modal-bg" id="addModal">
+  <div class="modal">
+    <h2>Add New Habit</h2>
+    <label>Habit Name</label>
+    <input type="text" id="newHabitName" placeholder="e.g. Exercise, Reading…" maxlength="30">
+    <label>Monthly Goal (days)</label>
+    <input type="number" id="newHabitGoal" placeholder="25" min="1" max="31" value="25">
+    <div class="modal-btns">
+      <button class="btn btn-white" onclick="closeAddModal()" style="border:2px solid var(--gray-border)">Cancel</button>
+      <button class="btn btn-teal" onclick="addHabit()">Add Habit</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  DATA MODEL
+// ============================================================
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS_SHORT = ['S','M','T','W','T','F','S'];
+const STORAGE_KEY = 'habitTrackerData_v2';
+
+let state = {
+  year: new Date().getFullYear(),
+  month: new Date().getMonth(),
+  habits: [
+    { id: uid(), name: 'Learning', goal: 25, checks: {} },
+    { id: uid(), name: 'DSA', goal: 25, checks: {} },
+    { id: uid(), name: 'Spring', goal: 25, checks: {} },
+    { id: uid(), name: 'React', goal: 25, checks: {} },
+    { id: uid(), name: 'Exercise', goal: 25, checks: {} },
+  ]
+};
+
+function uid() { return '_' + Math.random().toString(36).slice(2, 9); }
+
+// ============================================================
+//  PERSISTENCE
+// ============================================================
+function saveData() {
+  state.year = parseInt(document.getElementById('selYear').value);
+  state.month = parseInt(document.getElementById('selMonth').value);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  showToast('✅ Saved!');
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state = parsed;
+    }
+  } catch(e) {}
+}
+
+function confirmReset() {
+  if (confirm('Reset ALL data for this month? This cannot be undone.')) {
+    // clear checks for current month
+    const key = `${state.year}-${state.month}`;
+    state.habits.forEach(h => {
+      Object.keys(h.checks).forEach(k => {
+        if (k.startsWith(key + '-')) delete h.checks[k];
+      });
+    });
+    saveData();
+    rebuildAll();
+    showToast('🗑 Month data cleared');
+  }
+}
+
+// ============================================================
+//  UTILITY
+// ============================================================
+function getDaysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+function getFirstDayOfWeek(year, month) {
+  return new Date(year, month, 1).getDay();
+}
+function getDayOfWeek(year, month, day) {
+  return new Date(year, month, day).getDay();
+}
+function checkKey(year, month, day) {
+  return `${year}-${month}-${day}`;
+}
+function isWeekend(year, month, day) {
+  const d = getDayOfWeek(year, month, day);
+  return d === 0 || d === 6;
+}
+function isToday(year, month, day) {
+  const n = new Date();
+  return n.getFullYear() === year && n.getMonth() === month && n.getDate() === day;
+}
+function isPast(year, month, day) {
+  const n = new Date(); n.setHours(0,0,0,0);
+  const d = new Date(year, month, day);
+  return d <= n;
+}
+
+function getProgressColor(pct) {
+  if (pct >= 80) return '#3aaf85';
+  if (pct >= 50) return '#4bbfd4';
+  if (pct >= 30) return '#f5c842';
+  return '#e05050';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ============================================================
+//  CALCULATIONS
+// ============================================================
+function calcStats() {
+  const { year, month, habits } = state;
+  const totalDays = getDaysInMonth(year, month);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const monthDate = new Date(year, month, 1);
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  const daysPassed = isCurrentMonth ? Math.min(today.getDate(), totalDays) : (monthDate < today ? totalDays : 0);
+
+  let totalChecked = 0, totalGoal = 0;
+  let dailyCounts = Array(totalDays).fill(0);
+
+  habits.forEach(h => {
+    let habitChecked = 0;
+    for (let d = 1; d <= totalDays; d++) {
+      const k = checkKey(year, month, d);
+      if (h.checks[k]) { habitChecked++; dailyCounts[d-1]++; }
+    }
+    totalChecked += habitChecked;
+    totalGoal += h.goal;
+  });
+
+  // Success rate = completed / total goal
+  const successRate = totalGoal > 0 ? Math.round((totalChecked / totalGoal) * 100) : 0;
+
+  // Monthly progress = checked / (habits * totalDays) * 100
+  const maxPossible = habits.length * totalDays;
+  const monthlyPct = maxPossible > 0 ? Math.round((totalChecked / maxPossible) * 100) : 0;
+
+  // Normalized = checked / (habits * daysPassed) * 100
+  const maxPassed = habits.length * daysPassed;
+  const normalizedPct = maxPassed > 0 ? Math.round((totalChecked / maxPassed) * 100) : 0;
+
+  // Last 3 days momentum
+  const last3Start = Math.max(1, daysPassed - 2);
+  let last3Checked = 0, last3Max = 0;
+  for (let d = last3Start; d <= daysPassed; d++) {
+    habits.forEach(h => {
+      last3Max++;
+      if (h.checks[checkKey(year, month, d)]) last3Checked++;
+    });
+  }
+  const momentumPct = last3Max > 0 ? Math.round((last3Checked / last3Max) * 100) : 0;
+
+  return {
+    totalDays, daysPassed, totalChecked, totalGoal,
+    dailyCounts, successRate, monthlyPct, normalizedPct, momentumPct
+  };
+}
+
+// ============================================================
+//  BUILD UI
+// ============================================================
+function rebuildAll() {
+  state.year = parseInt(document.getElementById('selYear').value);
+  state.month = parseInt(document.getElementById('selMonth').value);
+  updateMeta();
+  buildTableHead();
+  buildTableBody();
+  updateStats();
+  saveData();
+}
+
+function updateMeta() {
+  const { year, month } = state;
+  const totalDays = getDaysInMonth(year, month);
+  const monthName = MONTHS[month];
+  document.getElementById('startDate').textContent = `${monthName} 1, ${year}`;
+  document.getElementById('endDate').textContent = `${monthName} ${totalDays}, ${year}`;
+  document.getElementById('totalDaysNum').textContent = totalDays;
+}
+
+function buildTableHead() {
+  const { year, month } = state;
+  const totalDays = getDaysInMonth(year, month);
+  const head = document.getElementById('tableHead');
+
+  let html = '<tr>';
+  html += '<th class="habit-col">HABIT</th>';
+  html += '<th class="goal-col">GOAL</th>';
+  for (let d = 1; d <= totalDays; d++) {
+    const dow = getDayOfWeek(year, month, d);
+    const todayCls = isToday(year, month, d) ? ' today-header' : '';
+    html += `<th class="day-header${todayCls}"><div class="day-num">${d}</div></th>`;
+  }
+  html += '<th class="progress-col">PROGRESS</th>';
+  html += '</tr>';
+  head.innerHTML = html;
+}
+
+function buildTableBody() {
+  const { year, month, habits } = state;
+  const totalDays = getDaysInMonth(year, month);
+  const body = document.getElementById('tableBody');
+
+  let html = '';
+  habits.forEach((h, hi) => {
+    let checked = 0;
+    for (let d = 1; d <= totalDays; d++) {
+      if (h.checks[checkKey(year, month, d)]) checked++;
+    }
+    const pct = h.goal > 0 ? Math.min(100, Math.round((checked / h.goal) * 100)) : 0;
+    const color = getProgressColor(pct);
+
+    html += `<tr data-hi="${hi}">`;
+    html += `<td class="habit-name-cell"><input class="habit-name-input" value="${h.name}" data-hi="${hi}" onchange="renameHabit(${hi},this.value)" onblur="saveData()"></td>`;
+    html += `<td><input class="goal-input" type="number" min="1" max="31" value="${h.goal}" data-hi="${hi}" onchange="changeGoal(${hi},this.value)"></td>`;
+
+    for (let d = 1; d <= totalDays; d++) {
+      const k = checkKey(year, month, d);
+      const isc = h.checks[k] ? ' checked' : '';
+      const wknd = isWeekend(year, month, d) ? ' weekend' : '';
+      const todayCls = isToday(year, month, d) ? ' today-col' : '';
+      html += `<td class="day-cell${isc}${wknd}${todayCls}" onclick="toggleCheck(${hi},${d})" title="Day ${d}"></td>`;
+    }
+
+    html += `<td class="progress-cell">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+        <span class="progress-pct" style="color:${color}">${pct}%</span>
+        <button class="del-btn" onclick="deleteHabit(${hi})" title="Delete habit">✕</button>
+      </div>
+    </td>`;
+    html += '</tr>';
+  });
+
+  body.innerHTML = html;
+}
+
+function updateStats() {
+  const s = calcStats();
+
+  // Success rate
+  document.getElementById('successPct').textContent = s.successRate + '%';
+  let icon = '😐', msg = 'KEEP GOING';
+  if (s.successRate >= 90) { icon = '🔥'; msg = 'EXCELLENT!'; }
+  else if (s.successRate >= 75) { icon = '💪'; msg = 'GREAT JOB!'; }
+  else if (s.successRate >= 50) { icon = '😊'; msg = 'GOOD PROGRESS'; }
+  else if (s.successRate >= 25) { icon = '😐'; msg = 'DO BETTER'; }
+  else { icon = '😔'; msg = 'START NOW!'; }
+  document.getElementById('successIcon').textContent = icon;
+  document.getElementById('successMsg').textContent = msg;
+
+  // Totals
+  document.getElementById('totalCompleted').textContent = `${s.totalChecked}/${s.totalGoal}`;
+
+  // Donuts
+  drawDonut('donut1', s.monthlyPct, '#ffffff55', '#fff');
+  drawDonut('donut2', s.normalizedPct, '#ffffff55', '#fff');
+  drawDonut('donut3', s.momentumPct, '#ffffff55', '#fff');
+  document.getElementById('d1pct').textContent = s.monthlyPct + '%';
+  document.getElementById('d2pct').textContent = s.normalizedPct + '%';
+  document.getElementById('d3pct').textContent = s.momentumPct + '%';
+
+  // Bar chart
+  drawBarChart(s.dailyCounts, s.totalDays);
+
+  // Bottom bar chart (per-day totals simplified to weekly)
+  drawBottomBars(s.dailyCounts);
+}
+
+function drawDonut(canvasId, pct, trackColor, fillColor) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height, r = (Math.min(w,h)/2) - 8;
+  const cx = w/2, cy = h/2;
+  ctx.clearRect(0, 0, w, h);
+
+  const start = -Math.PI/2;
+  const end = start + (2*Math.PI * pct/100);
+
+  // Track
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, 2*Math.PI);
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 10;
+  ctx.stroke();
+
+  // Fill
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, start, end);
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 10;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+}
+
+function drawBarChart(dailyCounts, totalDays) {
+  const c = document.getElementById('barChart');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.parentElement.clientWidth - 32;
+  const h = 160;
+  c.width = w * dpr; c.height = h * dpr;
+  c.style.width = w + 'px'; c.style.height = h + 'px';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,w,h);
+
+  const maxVal = Math.max(...dailyCounts, 1);
+  const barW = (w / totalDays) * 0.65;
+  const gap = (w / totalDays) * 0.35;
+  const pad = gap/2;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= maxVal; i++) {
+    const y = h - 20 - ((i/maxVal) * (h-30));
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '9px DM Sans';
+    ctx.fillText(i, 2, y - 2);
+  }
+
+  dailyCounts.forEach((count, i) => {
+    const x = pad + i * (w / totalDays);
+    const bh = count > 0 ? ((count/maxVal) * (h-30)) : 2;
+    const y = h - 20 - bh;
+
+    // Bar
+    const grad = ctx.createLinearGradient(0, y, 0, h-20);
+    grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+    grad.addColorStop(1, 'rgba(255,255,255,0.3)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x, y, barW, bh, [3,3,0,0]) : ctx.rect(x, y, barW, bh);
+    ctx.fill();
+
+    // Count label
+    if (count > 0) {
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 9px DM Sans';
+      ctx.textAlign = 'center';
+      ctx.fillText(count, x + barW/2, y - 3);
+    }
+  });
+
+  // Day numbers
+  const dn = document.getElementById('dayNumbers');
+  let html = '';
+  for (let d = 1; d <= totalDays; d++) {
+    html += `<span style="flex:1;text-align:center">${d}</span>`;
+  }
+  dn.innerHTML = html;
+}
+
+function drawBottomBars(dailyCounts) {
+  const container = document.getElementById('bottomBarChart');
+  const habits = state.habits;
+  if (!habits.length) { container.innerHTML = ''; return; }
+
+  // Group into weeks
+  const weeks = [];
+  for (let i = 0; i < dailyCounts.length; i += 7) {
+    const chunk = dailyCounts.slice(i, i+7);
+    weeks.push(chunk.reduce((a,b) => a+b, 0));
+  }
+
+  const maxW = Math.max(...weeks, 1);
+  const maxH = 40;
+  let html = '';
+  weeks.forEach((w, i) => {
+    const bh = Math.round((w/maxW) * maxH);
+    html += `<div class="bbc-col">
+      <div class="bbc-bar" style="height:${bh}px;min-height:2px"></div>
+      <div class="bbc-lbl">W${i+1}</div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// ============================================================
+//  INTERACTIONS
+// ============================================================
+function toggleCheck(hi, day) {
+  const { year, month } = state;
+  const k = checkKey(year, month, day);
+  const h = state.habits[hi];
+  h.checks[k] = !h.checks[k];
+  if (!h.checks[k]) delete h.checks[k];
+
+  // Toggle cell checked class
+  const rows = document.querySelectorAll('#tableBody tr');
+  const row = rows[hi];
+  if (row) {
+    const cells = row.querySelectorAll('.day-cell');
+    const cell = cells[day-1];
+    if (cell) cell.classList.toggle('checked');
+
+    // Recalculate and update progress bar live
+    const totalDays = getDaysInMonth(year, month);
+    let checked = 0;
+    for (let d = 1; d <= totalDays; d++) {
+      if (h.checks[checkKey(year, month, d)]) checked++;
+    }
+    const pct = h.goal > 0 ? Math.min(100, Math.round((checked / h.goal) * 100)) : 0;
+    const color = getProgressColor(pct);
+
+    const fill = row.querySelector('.progress-bar-fill');
+    const pctSpan = row.querySelector('.progress-pct');
+    if (fill) { fill.style.width = pct + '%'; fill.style.background = color; }
+    if (pctSpan) { pctSpan.textContent = pct + '%'; pctSpan.style.color = color; }
+  }
+
+  updateStats();
+  saveData();
+}
+
+function renameHabit(hi, val) {
+  state.habits[hi].name = val.trim() || `Habit ${hi+1}`;
+}
+
+function changeGoal(hi, val) {
+  const v = Math.max(1, Math.min(31, parseInt(val) || 25));
+  state.habits[hi].goal = v;
+  buildTableBody();
+  updateStats();
+  saveData();
+}
+
+function deleteHabit(hi) {
+  if (state.habits.length <= 1) { showToast('⚠️ At least one habit required'); return; }
+  state.habits.splice(hi, 1);
+  buildTableHead();
+  buildTableBody();
+  updateStats();
+  saveData();
+  showToast('Habit deleted');
+}
+
+// ============================================================
+//  ADD MODAL
+// ============================================================
+function openAddModal() {
+  document.getElementById('newHabitName').value = '';
+  document.getElementById('newHabitGoal').value = '25';
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(() => document.getElementById('newHabitName').focus(), 100);
+}
+function closeAddModal() {
+  document.getElementById('addModal').classList.remove('open');
+}
+function addHabit() {
+  const name = document.getElementById('newHabitName').value.trim();
+  const goal = parseInt(document.getElementById('newHabitGoal').value) || 25;
+  if (!name) { document.getElementById('newHabitName').style.borderColor='red'; return; }
+  state.habits.push({ id: uid(), name, goal, checks: {} });
+  closeAddModal();
+  buildTableHead();
+  buildTableBody();
+  updateStats();
+  saveData();
+  showToast(`✅ "${name}" added!`);
+}
+
+// ============================================================
+//  EXPORT
+// ============================================================
+function exportCSV() {
+  const { year, month, habits } = state;
+  const totalDays = getDaysInMonth(year, month);
+  const monthName = MONTHS[month];
+
+  let csv = `Monthly Habit Tracker - ${monthName} ${year}\n\n`;
+  let header = 'Habit,Goal';
+  for (let d = 1; d <= totalDays; d++) header += `,${d}`;
+  header += ',Completed,Progress%\n';
+  csv += header;
+
+  habits.forEach(h => {
+    let row = `"${h.name}",${h.goal}`;
+    let checked = 0;
+    for (let d = 1; d <= totalDays; d++) {
+      const v = h.checks[checkKey(year, month, d)] ? 1 : 0;
+      row += `,${v}`;
+      checked += v;
+    }
+    const pct = Math.round((checked/h.goal)*100);
+    row += `,${checked},${pct}%\n`;
+    csv += row;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `habits_${year}_${month+1}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('📊 CSV exported!');
+}
+
+// ============================================================
+//  KEYBOARD
+// ============================================================
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeAddModal();
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveData(); }
+});
+document.getElementById('addModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeAddModal();
+});
+document.getElementById('newHabitName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addHabit();
+});
+
+// ============================================================
+//  INIT
+// ============================================================
+function init() {
+  loadData();
+  document.getElementById('selYear').value = state.year;
+  document.getElementById('selMonth').value = state.month;
+  updateMeta();
+  buildTableHead();
+  buildTableBody();
+  updateStats();
+}
+
+window.addEventListener('resize', () => {
+  const s = calcStats();
+  drawBarChart(s.dailyCounts, s.totalDays);
+});
+
+init();
+</script>
+</body>
+</html>
