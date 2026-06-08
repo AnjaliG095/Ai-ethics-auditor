@@ -1,0 +1,2146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LexSa – Legal Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --black:#06080f;--black2:#0b0e18;--black3:#111520;--black4:#181d2a;
+  --gold:#c8a84b;--gold2:#e2c06a;--gold3:#f0d898;
+  --gold-dim:rgba(200,168,75,0.15);--gold-line:rgba(200,168,75,0.28);
+  --white:#f4f1eb;--muted:rgba(244,241,235,0.42);--muted2:rgba(244,241,235,0.62);
+  --green:#4caf50;--red:#d94f4f;--blue:#1a2340;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Outfit',sans-serif;background:var(--black);color:var(--white);overflow-x:hidden;}
+
+/* ── PAGE SYSTEM ── */
+.page{display:none;min-height:100vh;}
+.page.active{display:block;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:var(--black3);border:1px solid var(--gold-line);padding:0.85rem 1.3rem;font-size:0.82rem;color:var(--white);transform:translateY(80px);opacity:0;transition:all 0.3s;pointer-events:none;max-width:300px;border-left:3px solid var(--gold);}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;padding:1rem;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--black3);border:1px solid var(--gold-line);padding:2.5rem;max-width:480px;width:100%;position:relative;border-top:2px solid var(--gold);}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;transition:color 0.2s;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{color:var(--gold);}
+.modal h2{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:600;margin-bottom:0.3rem;}
+.modal .sub{font-size:0.8rem;color:var(--muted);margin-bottom:1.8rem;}
+.form-group{margin-bottom:1.1rem;}
+.form-group label{display:block;font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:0.4rem;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:0.8rem 1rem;background:var(--black4);border:1px solid rgba(200,168,75,0.18);color:var(--white);font-family:'Outfit',sans-serif;font-size:0.88rem;outline:none;transition:border-color 0.2s;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--gold-line);}
+.form-group select option{background:var(--black3);}
+.role-toggle{display:flex;margin-bottom:1.3rem;}
+.role-btn{flex:1;padding:0.65rem;background:var(--black4);border:1px solid rgba(200,168,75,0.18);color:var(--muted);font-family:'Outfit',sans-serif;font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
+.role-btn.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+.form-link{color:var(--gold);cursor:pointer;font-size:0.82rem;}
+.form-link:hover{color:var(--gold3);}
+.form-divider{text-align:center;color:var(--muted);font-size:0.75rem;margin:0.8rem 0;position:relative;}
+.form-divider::before,.form-divider::after{content:'';position:absolute;top:50%;width:44%;height:1px;background:rgba(200,168,75,0.12);}
+.form-divider::before{left:0;}.form-divider::after{right:0;}
+.char-count{font-size:0.68rem;color:var(--muted);text-align:right;margin-top:0.2rem;}
+
+/* ── BUTTONS ── */
+.btn-gold{background:var(--gold);color:var(--black);font-family:'Outfit',sans-serif;font-weight:700;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.9rem 2.2rem;border:none;cursor:pointer;position:relative;overflow:hidden;transition:background 0.25s;display:inline-block;text-decoration:none;}
+.btn-gold::after{content:'';position:absolute;inset:0;background:var(--gold3);transform:translateX(-101%);transition:transform 0.3s;}
+.btn-gold:hover::after{transform:translateX(0);}
+.btn-gold span{position:relative;z-index:1;}
+.btn-ghost{background:transparent;color:var(--muted2);font-family:'Outfit',sans-serif;font-weight:500;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.9rem 2.2rem;border:1px solid rgba(244,241,235,0.14);cursor:pointer;transition:all 0.25s;display:inline-flex;align-items:center;gap:0.4rem;}
+.btn-ghost:hover{border-color:var(--gold-line);color:var(--gold);}
+.btn-outline{background:transparent;color:var(--gold);font-family:'Outfit',sans-serif;font-weight:600;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.65rem 1.4rem;border:1px solid var(--gold-line);cursor:pointer;transition:all 0.2s;display:inline-block;}
+.btn-outline:hover{background:var(--gold);color:var(--black);}
+.btn-sm{padding:0.45rem 1rem;font-size:0.68rem;}
+.btn-red{background:var(--red);color:var(--white);border:none;font-family:'Outfit',sans-serif;font-weight:600;font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;padding:0.65rem 1.4rem;cursor:pointer;transition:opacity 0.2s;}
+.btn-red:hover{opacity:0.85;}
+.btn-full{width:100%;justify-content:center;}
+
+/* ── LABELS ── */
+.eyebrow{display:inline-flex;align-items:center;gap:0.7rem;font-size:0.65rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;}
+.eyebrow::before{content:'';width:24px;height:1px;background:var(--gold);display:block;}
+.eyebrow.center{justify-content:center;}.eyebrow.center::before{display:none;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,3.2vw,2.8rem);font-weight:300;line-height:1.15;color:var(--white);letter-spacing:-0.01em;}
+.sec-title em{font-style:italic;color:var(--gold);font-weight:400;}
+
+/* ══════════════════════════════════
+   NAVBAR
+══════════════════════════════════ */
+nav{position:fixed;top:0;left:0;right:0;z-index:800;display:flex;align-items:center;justify-content:space-between;padding:1.1rem 4rem;border-bottom:1px solid rgba(200,168,75,0.08);background:rgba(6,8,15,0.92);backdrop-filter:blur(20px);}
+.logo{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;color:var(--white);letter-spacing:0.02em;text-decoration:none;cursor:pointer;}
+.logo em{color:var(--gold);font-style:normal;}
+.nav-links{display:flex;gap:2.4rem;list-style:none;}
+.nav-links a{font-size:0.72rem;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color 0.2s;cursor:pointer;}
+.nav-links a:hover{color:var(--gold);}
+.nav-right{display:flex;align-items:center;gap:0.8rem;}
+.nav-btn{background:transparent;border:1px solid var(--gold-line);color:var(--gold);font-family:'Outfit',sans-serif;font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:0.55rem 1.4rem;cursor:pointer;transition:all 0.2s;}
+.nav-btn:hover,.nav-btn.filled{background:var(--gold);color:var(--black);border-color:var(--gold);}
+.nav-user-info{display:flex;align-items:center;gap:0.6rem;font-size:0.75rem;color:var(--muted2);}
+.nav-av{width:30px;height:30px;background:linear-gradient(135deg,var(--gold),#7a5c20);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;color:var(--black);font-family:'Cormorant Garamond',serif;border-radius:2px;}
+/* Hamburger for mobile */
+.nav-hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:0.3rem;}
+.nav-hamburger span{display:block;width:22px;height:2px;background:var(--gold);transition:all 0.3s;}
+.mobile-menu{display:none;position:fixed;top:60px;left:0;right:0;background:rgba(6,8,15,0.98);border-bottom:1px solid var(--gold-line);padding:1.5rem;flex-direction:column;gap:1rem;z-index:799;}
+.mobile-menu.open{display:flex;}
+.mobile-menu a,.mobile-menu button{font-size:0.82rem;color:var(--muted2);text-decoration:none;cursor:pointer;background:none;border:none;text-align:left;padding:0.5rem 0;border-bottom:1px solid rgba(200,168,75,0.07);width:100%;}
+.mobile-menu a:hover,.mobile-menu button:hover{color:var(--gold);}
+
+/* ══════════════════════════════════
+   HERO — Three.js 3D BG
+══════════════════════════════════ */
+.hero{min-height:100vh;position:relative;display:flex;align-items:center;overflow:hidden;background:var(--black);}
+#threeCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+/* Gold radial overlay */
+.hero-glow{position:absolute;top:-20%;right:-10%;width:800px;height:800px;background:radial-gradient(ellipse,rgba(200,168,75,0.06) 0%,transparent 65%);pointer-events:none;z-index:1;}
+.hero-glow2{position:absolute;bottom:-20%;left:-5%;width:500px;height:500px;background:radial-gradient(ellipse,rgba(30,50,120,0.25) 0%,transparent 65%);pointer-events:none;z-index:1;}
+.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;width:100%;max-width:1280px;margin:0 auto;padding:9rem 4rem 5rem;gap:4rem;align-items:center;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:0.7rem;font-size:0.65rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:2rem;}
+.hero-dot{width:4px;height:4px;background:var(--gold);border-radius:50%;animation:dotPulse 2s ease-in-out infinite;}
+@keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.6)}}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:clamp(2.8rem,5vw,4.8rem);font-weight:300;line-height:1.05;color:var(--white);margin-bottom:1.5rem;letter-spacing:-0.02em;}
+.hero h1 .italic-gold{font-style:italic;color:var(--gold);font-weight:400;}
+.hero h1 .outlined{-webkit-text-stroke:1px rgba(244,241,235,0.7);color:transparent;}
+.hero-body{font-size:0.95rem;line-height:1.82;color:var(--muted2);max-width:400px;margin-bottom:2.5rem;font-weight:300;}
+.hero-btns{display:flex;gap:1rem;flex-wrap:wrap;}
+.hero-numbers{display:flex;margin-top:3rem;border-top:1px solid rgba(200,168,75,0.12);padding-top:2rem;}
+.hero-num-item{flex:1;padding-right:1.8rem;border-right:1px solid rgba(200,168,75,0.1);}
+.hero-num-item:last-child{border-right:none;padding-right:0;padding-left:1.8rem;}
+.hero-num-item:first-child{padding-left:0;}
+.hero-num-val{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;color:var(--gold);line-height:1;}
+.hero-num-lbl{font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:0.3rem;}
+/* Profile card — right panel */
+.hero-right{position:relative;}
+.profile-card{background:rgba(17,21,32,0.92);border:1px solid var(--gold-line);padding:2rem;position:relative;backdrop-filter:blur(10px);}
+.profile-card::before{content:'';position:absolute;top:0;left:2rem;right:2rem;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.verified-badge{position:absolute;top:-18px;left:-16px;background:var(--gold);color:var(--black);padding:0.4rem 0.9rem;font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;}
+.p-badge{display:inline-flex;align-items:center;gap:0.4rem;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:1.2rem;padding:0.25rem 0.7rem;border:1px solid var(--gold-dim);}
+.p-av-row{display:flex;align-items:center;gap:0.9rem;margin-bottom:1rem;}
+.p-av{width:54px;height:54px;background:linear-gradient(135deg,var(--gold),#7a5c20);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:var(--black);flex-shrink:0;}
+.p-name{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;color:var(--white);}
+.p-spec{font-size:0.68rem;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase;margin-top:0.1rem;}
+.p-stars{color:var(--gold);font-size:0.8rem;margin-bottom:0.6rem;}
+.p-meta{font-size:0.75rem;color:var(--muted2);line-height:1.6;}
+.p-stats{display:flex;gap:0.8rem;margin-top:1.2rem;padding-top:1rem;border-top:1px solid rgba(200,168,75,0.08);}
+.p-stat{flex:1;background:rgba(200,168,75,0.05);padding:0.6rem;text-align:center;}
+.p-stat-v{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;color:var(--gold);}
+.p-stat-l{font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:0.1rem;}
+.profile-mini{background:rgba(24,29,42,0.95);border:1px solid rgba(200,168,75,0.1);padding:1.4rem;position:absolute;bottom:-36px;right:-24px;width:220px;}
+.pm-online{display:flex;align-items:center;gap:0.4rem;font-size:0.67rem;color:var(--green);margin-bottom:0.6rem;}
+.pm-dot{width:5px;height:5px;background:var(--green);border-radius:50%;}
+.pm-name{font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-weight:600;color:var(--white);}
+.pm-spec{font-size:0.67rem;color:var(--muted);margin-top:0.1rem;margin-bottom:0.7rem;}
+.pm-btn{width:100%;padding:0.5rem;background:var(--gold-dim);border:1px solid var(--gold-line);color:var(--gold);font-family:'Outfit',sans-serif;font-size:0.67rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
+.pm-btn:hover{background:var(--gold);color:var(--black);}
+
+/* ── SEARCH WRAP ── */
+.search-wrap{background:var(--black3);border-top:1px solid rgba(200,168,75,0.1);border-bottom:1px solid rgba(200,168,75,0.1);padding:3rem 4rem;}
+.search-inner{max-width:860px;margin:0 auto;}
+.search-label{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:300;color:var(--muted2);margin-bottom:1rem;}
+.search-label em{color:var(--white);font-style:italic;}
+.search-row{display:flex;}
+.search-input{flex:1;padding:1rem 1.3rem;background:var(--black4);border:1px solid rgba(200,168,75,0.18);border-right:none;color:var(--white);font-family:'Outfit',sans-serif;font-size:0.9rem;outline:none;}
+.search-input::placeholder{color:var(--muted);}
+.search-input:focus{border-color:var(--gold-line);}
+.search-btn{background:var(--gold);color:var(--black);border:none;padding:0 2rem;font-family:'Outfit',sans-serif;font-weight:700;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:background 0.2s;white-space:nowrap;}
+.search-btn:hover{background:var(--gold3);}
+
+/* ── HOW IT WORKS ── */
+.how{padding:7rem 4rem;background:var(--black2);position:relative;overflow:hidden;}
+.how::before{content:'';position:absolute;top:-150px;right:-150px;width:500px;height:500px;background:radial-gradient(circle,rgba(200,168,75,0.03) 0%,transparent 60%);pointer-events:none;}
+.how-header{text-align:center;margin-bottom:4.5rem;}
+.steps-track{display:grid;grid-template-columns:repeat(4,1fr);max-width:1100px;margin:0 auto;position:relative;gap:1rem;}
+.steps-track::after{content:'';position:absolute;top:32px;left:calc(12.5% + 32px);right:calc(12.5% + 32px);height:1px;background:linear-gradient(90deg,rgba(200,168,75,0.12),rgba(200,168,75,0.28) 50%,rgba(200,168,75,0.12));pointer-events:none;}
+.step-item{padding:0 1.2rem;text-align:center;cursor:pointer;}
+.step-circle{width:64px;height:64px;margin:0 auto 1.5rem;border:1px solid var(--gold-line);display:flex;align-items:center;justify-content:center;position:relative;z-index:1;background:var(--black2);transition:all 0.3s;}
+.step-num{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:var(--gold);line-height:1;}
+.step-item:hover .step-circle{background:var(--gold);border-color:var(--gold);}
+.step-item:hover .step-num{color:var(--black);}
+.step-item h3{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;color:var(--white);margin-bottom:0.5rem;}
+.step-item p{font-size:0.8rem;color:var(--muted);line-height:1.7;}
+
+/* ══════════════════════════════════
+   PRACTICE AREAS — 3D CARD SLIDER
+══════════════════════════════════ */
+.practice{padding:7rem 0;background:var(--black);overflow:hidden;}
+.practice-header{padding:0 4rem;margin-bottom:3rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+.prac-slider-outer{position:relative;}
+.prac-fade-l,.prac-fade-r{position:absolute;top:0;bottom:0;width:100px;z-index:4;pointer-events:none;}
+.prac-fade-l{left:0;background:linear-gradient(to right,var(--black),transparent);}
+.prac-fade-r{right:0;background:linear-gradient(to left,var(--black),transparent);}
+/* Two rows scrolling in opposite directions */
+.prac-row{display:flex;gap:1.2rem;padding:0.6rem 0;width:max-content;}
+.prac-row.row1{animation:rowLeft 35s linear infinite;}
+.prac-row.row2{animation:rowRight 40s linear infinite;}
+.prac-row:hover{animation-play-state:paused;}
+@keyframes rowLeft{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes rowRight{0%{transform:translateX(-50%)}100%{transform:translateX(0)}}
+.prac-card{width:260px;flex-shrink:0;background:var(--black3);border:1px solid rgba(200,168,75,0.1);padding:1.8rem;cursor:pointer;position:relative;overflow:hidden;transition:all 0.4s;transform-style:preserve-3d;}
+.prac-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--gold2));transform:scaleX(0);transform-origin:left;transition:transform 0.4s;}
+.prac-card:hover{background:var(--black4);border-color:rgba(200,168,75,0.3);transform:translateY(-8px) rotateX(4deg);}
+.prac-card:hover::before{transform:scaleX(1);}
+.prac-icon{font-size:1.5rem;margin-bottom:1rem;display:block;}
+.prac-num-bg{position:absolute;top:1.2rem;right:1.2rem;font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:700;color:rgba(200,168,75,0.05);line-height:1;pointer-events:none;}
+.prac-card h3{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;color:var(--white);margin-bottom:0.4rem;}
+.prac-card p{font-size:0.78rem;color:var(--muted);line-height:1.65;}
+.prac-count-badge{display:inline-block;margin-top:1rem;font-size:0.63rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);font-weight:600;padding:0.22rem 0.65rem;border:1px solid var(--gold-dim);}
+/* Pause button */
+.prac-pause-btn{margin:1.5rem 4rem 0;background:none;border:1px solid var(--gold-line);color:var(--gold);font-family:'Outfit',sans-serif;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.5rem 1.2rem;cursor:pointer;transition:all 0.2s;}
+.prac-pause-btn:hover{background:var(--gold-dim);}
+
+/* ══════════════════════════════════
+   LAWYERS — SLOW MARQUEE SLIDER
+══════════════════════════════════ */
+.lawyers{padding:7rem 0;background:var(--black2);overflow:hidden;}
+.lawyers-header{padding:0 4rem;margin-bottom:3rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+.lawyers-slider-outer{position:relative;}
+.law-fade-l,.law-fade-r{position:absolute;top:0;bottom:0;width:120px;z-index:4;pointer-events:none;}
+.law-fade-l{left:0;background:linear-gradient(to right,var(--black2),transparent);}
+.law-fade-r{right:0;background:linear-gradient(to left,var(--black2),transparent);}
+.lawyers-track{display:flex;gap:1.4rem;width:max-content;animation:lawScroll 50s linear infinite;}
+.lawyers-track.paused{animation-play-state:paused;}
+@keyframes lawScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.law-pause-wrap{margin:1.5rem 4rem 0;display:flex;align-items:center;gap:1rem;}
+.law-pause-btn{background:none;border:1px solid var(--gold-line);color:var(--gold);font-family:'Outfit',sans-serif;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.5rem 1.2rem;cursor:pointer;transition:all 0.2s;}
+.law-pause-btn:hover{background:var(--gold-dim);}
+.l-card{background:var(--black);border:1px solid rgba(200,168,75,0.08);padding:1.9rem;transition:all 0.3s;position:relative;overflow:hidden;width:290px;flex-shrink:0;}
+.l-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--gold2));transform:scaleX(0);transform-origin:left;transition:transform 0.4s;}
+.l-card:hover{border-color:rgba(200,168,75,0.28);transform:translateY(-4px);}
+.l-card:hover::after{transform:scaleX(1);}
+.l-top{display:flex;align-items:center;gap:1rem;margin-bottom:1rem;}
+.l-av{width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;color:var(--black);flex-shrink:0;}
+.l-name{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;color:var(--white);}
+.l-spec{font-size:0.67rem;color:var(--gold);text-transform:uppercase;letter-spacing:0.1em;margin-top:0.1rem;}
+.l-stars{color:var(--gold);font-size:0.78rem;margin-bottom:0.2rem;}
+.l-stars span{color:var(--muted);font-size:0.7rem;}
+.l-bio{font-size:0.78rem;color:var(--muted);line-height:1.65;margin:0.6rem 0 1rem;}
+.l-tags{display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:1.1rem;}
+.l-tag{font-size:0.64rem;padding:0.18rem 0.55rem;border:1px solid rgba(200,168,75,0.18);color:rgba(200,168,75,0.72);letter-spacing:0.04em;}
+.l-consult{width:100%;padding:0.65rem;background:transparent;border:1px solid rgba(200,168,75,0.25);color:var(--gold);font-family:'Outfit',sans-serif;font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
+.l-consult:hover{background:var(--gold);color:var(--black);}
+
+/* ── FEATURES ── */
+.features{padding:7rem 4rem;background:var(--black);}
+.features-inner{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;max-width:1100px;}
+.feat-vis{position:relative;height:460px;}
+.fmock{position:absolute;background:var(--black3);border:1px solid rgba(200,168,75,0.13);padding:1.4rem;color:var(--white);}
+.fmock-title{font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.9rem;display:flex;align-items:center;gap:0.4rem;}
+.fmock-title::before{content:'';width:10px;height:1px;background:var(--gold);}
+@keyframes floatFmock{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.fmock.a{width:265px;top:0;left:0;animation:floatFmock 7s ease-in-out infinite;}
+.fmock.b{width:220px;bottom:25px;right:0;animation:floatFmock 8s ease-in-out infinite 2s;}
+.fmock.c{width:180px;top:44%;left:43%;animation:floatFmock 6s ease-in-out infinite 1s;}
+.fmock.a::before,.fmock.b::before{content:'';position:absolute;top:-1px;left:1.2rem;width:36px;height:2px;background:var(--gold);}
+.bar-row{margin-bottom:0.5rem;}
+.bar-bg{height:4px;background:rgba(255,255,255,0.06);overflow:hidden;}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));}
+.bar-label{font-size:0.67rem;color:var(--muted);margin-bottom:0.25rem;}
+.bar-meta{font-size:0.67rem;color:var(--muted);margin-top:0.7rem;}
+.feat-list{display:flex;flex-direction:column;gap:2rem;margin-top:2.5rem;}
+.feat-row{display:flex;gap:1.2rem;}
+.feat-ico{width:42px;height:42px;flex-shrink:0;background:rgba(200,168,75,0.06);border:1px solid var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.feat-row h3{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:600;color:var(--white);margin-bottom:0.25rem;}
+.feat-row p{font-size:0.78rem;color:var(--muted);line-height:1.65;}
+
+/* ── TESTIMONIALS ── */
+.testimonials{padding:7rem 4rem;background:var(--black2);}
+.testimonials-header{text-align:center;margin-bottom:3.5rem;}
+.reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.3rem;max-width:1100px;margin:0 auto;}
+.r-card{background:var(--black);border:1px solid rgba(200,168,75,0.08);padding:2rem;position:relative;transition:border-color 0.3s;}
+.r-card:hover{border-color:rgba(200,168,75,0.28);}
+.r-quote-mark{position:absolute;top:1rem;right:1.2rem;font-family:'Cormorant Garamond',serif;font-size:3.5rem;color:rgba(200,168,75,0.08);line-height:1;pointer-events:none;font-weight:700;}
+.r-stars{color:var(--gold);font-size:0.8rem;margin-bottom:1rem;}
+.r-text{font-size:0.82rem;color:var(--muted2);line-height:1.75;font-style:italic;margin-bottom:1.3rem;}
+.r-person{display:flex;align-items:center;gap:0.8rem;}
+.r-av{width:38px;height:38px;background:linear-gradient(135deg,#1a1a1a,#333);border:1px solid var(--gold-dim);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;color:var(--gold);font-weight:700;font-size:0.95rem;}
+.r-name{font-size:0.82rem;font-weight:600;color:var(--white);}
+.r-case{font-size:0.67rem;color:var(--gold);text-transform:uppercase;letter-spacing:0.08em;margin-top:0.1rem;}
+
+/* ── CTA BANNER ── */
+.cta-banner{padding:5.5rem 4rem;background:var(--gold);position:relative;overflow:hidden;text-align:center;}
+.cta-banner::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 10px,rgba(0,0,0,0.025) 10px,rgba(0,0,0,0.025) 11px);}
+.cta-banner h2{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,3.8vw,3.2rem);font-weight:300;color:var(--black);letter-spacing:-0.02em;margin-bottom:0.8rem;position:relative;}
+.cta-banner p{font-size:0.95rem;color:rgba(8,8,8,0.6);margin-bottom:2rem;position:relative;}
+.cta-btns{display:flex;gap:0.8rem;justify-content:center;flex-wrap:wrap;position:relative;}
+.btn-dark{background:var(--black);color:var(--gold);font-family:'Outfit',sans-serif;font-weight:700;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.9rem 2.2rem;border:none;cursor:pointer;transition:all 0.25s;}
+.btn-dark:hover{background:var(--black3);}
+.btn-outline-dark{background:transparent;color:var(--black);border:1px solid rgba(8,8,8,0.25);font-family:'Outfit',sans-serif;font-weight:600;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.9rem 2.2rem;cursor:pointer;transition:all 0.25s;}
+.btn-outline-dark:hover{background:rgba(8,8,8,0.07);}
+
+/* ── EMERGENCY STRIP ── */
+.emergency-strip{background:rgba(217,79,79,0.05);border-top:1px solid rgba(217,79,79,0.18);padding:1.2rem 4rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.es-text strong{font-size:0.85rem;font-weight:600;color:var(--red);}
+.es-text span{display:block;font-size:0.72rem;color:var(--muted);margin-top:0.1rem;}
+
+/* ── FOOTER ── */
+footer{background:var(--black);border-top:1px solid rgba(200,168,75,0.1);}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3.5rem;padding:4.5rem 4rem 3.5rem;border-bottom:1px solid rgba(200,168,75,0.07);}
+.footer-brand .logo{font-size:1.8rem;display:inline-block;margin-bottom:1rem;}
+.footer-brand p{font-size:0.8rem;color:var(--muted);line-height:1.75;max-width:280px;}
+.footer-col h4{font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:1.2rem;font-weight:600;}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:0.6rem;}
+.footer-col a{font-size:0.8rem;color:var(--muted);text-decoration:none;transition:color 0.2s;cursor:pointer;}
+.footer-col a:hover{color:var(--white);}
+.footer-bottom{padding:1.5rem 4rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;}
+.footer-bottom p{font-size:0.72rem;color:var(--muted);}
+
+/* ══════════════════════════════════
+   DASHBOARD
+══════════════════════════════════ */
+.dash-layout{display:grid;grid-template-columns:250px 1fr;min-height:calc(100vh - 60px);margin-top:60px;}
+.sidebar{background:var(--black2);border-right:1px solid rgba(200,168,75,0.1);padding:1.5rem 0;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;}
+.sidebar-user{padding:1.3rem 1.6rem 1.6rem;border-bottom:1px solid rgba(200,168,75,0.08);margin-bottom:0.8rem;}
+.sidebar-av{width:50px;height:50px;background:linear-gradient(135deg,var(--gold),#7a5c20);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;color:var(--black);margin-bottom:0.7rem;}
+.sidebar-name{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;color:var(--white);}
+.sidebar-role{font-size:0.65rem;color:var(--gold);text-transform:uppercase;letter-spacing:0.1em;margin-top:0.12rem;}
+.sidebar-nav{list-style:none;}
+.sidebar-nav li a,.sidebar-nav li button{display:flex;align-items:center;gap:0.7rem;width:100%;padding:0.78rem 1.6rem;font-size:0.78rem;font-weight:500;color:var(--muted);text-decoration:none;transition:all 0.2s;background:none;border:none;text-align:left;cursor:pointer;letter-spacing:0.02em;}
+.sidebar-nav li a:hover,.sidebar-nav li button:hover{color:var(--white);background:rgba(200,168,75,0.05);}
+.sidebar-nav li a.active{border-right:2px solid var(--gold);color:var(--gold);background:rgba(200,168,75,0.05);}
+.sidebar-section-lbl{font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:0.9rem 1.6rem 0.35rem;margin-top:0.3rem;}
+.dash-main{padding:2.5rem 3rem;background:var(--black);}
+.dash-header{margin-bottom:2.2rem;}
+.dash-header h1{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:var(--white);}
+.dash-header p{font-size:0.84rem;color:var(--muted);margin-top:0.25rem;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2.2rem;}
+.stat-card{background:var(--black3);border:1px solid rgba(200,168,75,0.08);padding:1.3rem;transition:border-color 0.2s;cursor:default;}
+.stat-card:hover{border-color:var(--gold-line);}
+.stat-val{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:700;color:var(--gold);}
+.stat-label{font-size:0.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:0.2rem;}
+.section-card{background:var(--black3);border:1px solid rgba(200,168,75,0.08);padding:1.8rem;margin-bottom:1.3rem;}
+.section-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.3rem;}
+.section-card-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;color:var(--white);}
+.case-list{display:flex;flex-direction:column;gap:0.85rem;}
+.case-item{background:var(--black4);border:1px solid rgba(200,168,75,0.07);padding:1.2rem 1.4rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;transition:border-color 0.2s;}
+.case-item:hover{border-color:var(--gold-line);}
+.case-title{font-size:0.88rem;font-weight:600;color:var(--white);margin-bottom:0.2rem;}
+.case-meta{font-size:0.72rem;color:var(--muted);}
+.case-status{font-size:0.63rem;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;padding:0.28rem 0.75rem;border:1px solid;flex-shrink:0;}
+.s-submitted{color:#f0d898;border-color:rgba(240,216,152,0.28);background:rgba(240,216,152,0.05);}
+.s-accepted{color:#4caf50;border-color:rgba(76,175,80,0.28);background:rgba(76,175,80,0.05);}
+.s-consult{color:#64b5f6;border-color:rgba(100,181,246,0.28);background:rgba(100,181,246,0.05);}
+.s-done{color:var(--muted);border-color:rgba(244,241,235,0.1);background:rgba(244,241,235,0.02);}
+.case-actions{display:flex;gap:0.45rem;flex-shrink:0;}
+.data-table{width:100%;border-collapse:collapse;}
+.data-table th{font-size:0.63rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);padding:0.75rem 0.9rem;text-align:left;border-bottom:1px solid rgba(200,168,75,0.12);}
+.data-table td{font-size:0.78rem;color:var(--muted2);padding:0.82rem 0.9rem;border-bottom:1px solid rgba(200,168,75,0.05);}
+.data-table tr:hover td{background:rgba(200,168,75,0.02);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.form-grid .span2{grid-column:span 2;}
+/* Profile view */
+.ph-header{background:var(--black3);border:1px solid var(--gold-line);padding:2rem;display:flex;gap:1.8rem;align-items:flex-start;margin-bottom:1.5rem;position:relative;}
+.ph-header::before{content:'';position:absolute;top:0;left:2rem;right:2rem;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.ph-av{width:72px;height:72px;background:linear-gradient(135deg,var(--gold),#7a5c20);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;color:var(--black);flex-shrink:0;}
+.ph-name{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:600;color:var(--white);}
+.ph-role{font-size:0.7rem;color:var(--gold);text-transform:uppercase;letter-spacing:0.1em;margin-top:0.15rem;}
+/* Lawyer profile view */
+.lpv-header{background:var(--black3);border:1px solid var(--gold-line);padding:2.2rem;display:flex;gap:1.8rem;margin-bottom:1.3rem;position:relative;}
+.lpv-header::before{content:'';position:absolute;top:0;left:2rem;right:2rem;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.lpv-av{width:82px;height:82px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--black);flex-shrink:0;}
+.lpv-name{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:600;color:var(--white);}
+.lpv-spec{font-size:0.73rem;color:var(--gold);text-transform:uppercase;letter-spacing:0.1em;margin-top:0.18rem;}
+.lpv-badge{display:inline-flex;align-items:center;gap:0.35rem;background:rgba(76,175,80,0.08);border:1px solid rgba(76,175,80,0.28);color:#4caf50;font-size:0.63rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.22rem 0.65rem;margin-top:0.7rem;}
+.lpv-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(200,168,75,0.08);margin-bottom:1.3rem;}
+.lpv-stat{background:var(--black3);padding:1rem;text-align:center;}
+.lpv-stat-v{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:var(--gold);}
+.lpv-stat-l{font-size:0.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-top:0.18rem;}
+.consult-btns{display:flex;gap:0.7rem;flex-wrap:wrap;}
+.con-btn{padding:0.72rem 1.5rem;font-family:'Outfit',sans-serif;font-weight:600;font-size:0.73rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:0.4rem;border:1px solid;}
+.con-chat{background:var(--gold-dim);border-color:var(--gold-line);color:var(--gold);}
+.con-chat:hover{background:var(--gold);color:var(--black);}
+.con-video{background:rgba(100,181,246,0.08);border-color:rgba(100,181,246,0.28);color:#64b5f6;}
+.con-video:hover{background:#64b5f6;color:var(--black);}
+.con-voice{background:rgba(76,175,80,0.08);border-color:rgba(76,175,80,0.28);color:#4caf50;}
+.con-voice:hover{background:#4caf50;color:var(--black);}
+.con-book{background:var(--gold);color:var(--black);border-color:var(--gold);}
+.con-book:hover{background:var(--gold3);}
+
+/* ── CHAT ── */
+.chat-layout{display:grid;grid-template-columns:270px 1fr;height:calc(100vh - 60px);margin-top:60px;}
+.chat-list-panel{border-right:1px solid rgba(200,168,75,0.1);overflow-y:auto;background:var(--black2);}
+.chat-list-title{padding:1.3rem 1.1rem;border-bottom:1px solid rgba(200,168,75,0.08);font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;}
+.chat-item{padding:0.9rem 1.1rem;display:flex;gap:0.75rem;cursor:pointer;transition:background 0.2s;border-bottom:1px solid rgba(200,168,75,0.05);}
+.chat-item:hover,.chat-item.active{background:rgba(200,168,75,0.05);}
+.chat-item.active{border-right:2px solid var(--gold);}
+.ci-av{width:38px;height:38px;background:linear-gradient(135deg,var(--gold),#7a5c20);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-weight:700;color:var(--black);flex-shrink:0;font-size:0.85rem;}
+.ci-name{font-size:0.8rem;font-weight:600;color:var(--white);}
+.ci-preview{font-size:0.68rem;color:var(--muted);margin-top:0.12rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;}
+.ci-time{font-size:0.63rem;color:var(--muted);margin-left:auto;flex-shrink:0;}
+.ci-unread{background:var(--gold);color:var(--black);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:0.58rem;font-weight:700;margin-left:auto;flex-shrink:0;}
+.chat-window{display:flex;flex-direction:column;}
+.chat-topbar{padding:0.9rem 1.3rem;border-bottom:1px solid rgba(200,168,75,0.1);display:flex;align-items:center;gap:0.9rem;background:var(--black3);}
+.chat-topbar-av{width:36px;height:36px;background:linear-gradient(135deg,var(--gold),#7a5c20);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-weight:700;color:var(--black);font-size:0.85rem;}
+.chat-topbar-name{font-size:0.88rem;font-weight:600;color:var(--white);}
+.chat-topbar-status{font-size:0.67rem;color:var(--green);}
+.chat-topbar-actions{margin-left:auto;display:flex;gap:0.4rem;}
+.chat-timer-bar{background:rgba(200,168,75,0.06);border-bottom:1px solid rgba(200,168,75,0.1);padding:0.5rem 1.3rem;font-size:0.72rem;color:var(--gold);display:flex;align-items:center;gap:0.5rem;}
+.chat-timer-bar.expired{color:var(--red);background:rgba(217,79,79,0.06);border-color:rgba(217,79,79,0.18);}
+.free-timer{font-weight:700;font-family:'Cormorant Garamond',serif;font-size:1.1rem;}
+.chat-msgs{flex:1;overflow-y:auto;padding:1.2rem;display:flex;flex-direction:column;gap:0.9rem;}
+.msg{max-width:60%;}
+.msg.sent{align-self:flex-end;}
+.msg.recv{align-self:flex-start;}
+.msg-bubble{padding:0.72rem 1rem;font-size:0.82rem;line-height:1.6;}
+.msg.sent .msg-bubble{background:var(--gold-dim);border:1px solid var(--gold-line);color:var(--white);}
+.msg.recv .msg-bubble{background:var(--black3);border:1px solid rgba(200,168,75,0.07);color:var(--muted2);}
+.msg-time{font-size:0.6rem;color:var(--muted);margin-top:0.25rem;text-align:right;}
+.chat-input-row{padding:0.9rem 1.2rem;border-top:1px solid rgba(200,168,75,0.1);display:flex;gap:0.7rem;background:var(--black3);}
+.chat-input{flex:1;padding:0.78rem 1rem;background:var(--black4);border:1px solid rgba(200,168,75,0.18);color:var(--white);font-family:'Outfit',sans-serif;font-size:0.84rem;outline:none;}
+.chat-input:focus{border-color:var(--gold-line);}
+.chat-send-btn{padding:0.78rem 1.3rem;background:var(--gold);color:var(--black);border:none;font-family:'Outfit',sans-serif;font-weight:700;font-size:0.73rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:background 0.2s;}
+.chat-send-btn:hover{background:var(--gold3);}
+.upgrade-prompt{background:rgba(200,168,75,0.05);border:1px solid var(--gold-line);padding:1rem 1.2rem;text-align:center;}
+.upgrade-prompt p{font-size:0.8rem;color:var(--muted2);margin-bottom:0.7rem;}
+
+/* ── VIDEO ── */
+.video-page{background:var(--black);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5.5rem 2rem 2rem;}
+.video-grid{display:grid;grid-template-columns:2fr 1fr;gap:1rem;max-width:1000px;width:100%;margin-bottom:1.3rem;}
+.video-main,.video-self{background:var(--black3);border:1px solid var(--gold-line);aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative;}
+.video-label{position:absolute;bottom:0.7rem;left:0.7rem;background:rgba(0,0,0,0.7);padding:0.25rem 0.55rem;font-size:0.65rem;color:var(--white);}
+.video-live{position:absolute;top:0.7rem;left:0.7rem;background:rgba(217,79,79,0.15);border:1px solid rgba(217,79,79,0.4);padding:0.22rem 0.6rem;font-size:0.63rem;color:var(--red);letter-spacing:0.1em;text-transform:uppercase;}
+.vc-controls{display:flex;gap:0.8rem;align-items:center;}
+.vc-btn{width:50px;height:50px;border-radius:50%;border:1px solid rgba(200,168,75,0.25);background:var(--black3);color:var(--white);font-size:1.2rem;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;}
+.vc-btn:hover{border-color:var(--gold);background:var(--gold-dim);}
+.vc-end{background:var(--red);border-color:var(--red);}
+.vc-end:hover{background:#c44;}
+.video-timer{font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--gold);margin:0 0.8rem;}
+
+/* ── NOTIFICATIONS ── */
+.notif-item{background:var(--black3);border:1px solid rgba(200,168,75,0.07);padding:1.1rem 1.3rem;display:flex;gap:0.9rem;align-items:flex-start;transition:border-color 0.2s;margin-bottom:0.7rem;}
+.notif-item:hover{border-color:var(--gold-line);}
+.notif-item.unread{border-left:2px solid var(--gold);}
+.notif-text{font-size:0.8rem;color:var(--white);line-height:1.5;}
+.notif-sub{font-size:0.7rem;color:var(--muted);margin-top:0.2rem;}
+.notif-time{font-size:0.65rem;color:var(--muted);margin-left:auto;flex-shrink:0;}
+
+/* ── FILTERS ── */
+.filter-bar{display:flex;gap:0.8rem;flex-wrap:wrap;margin-bottom:1.8rem;}
+.filter-input{padding:0.65rem 0.9rem;background:var(--black3);border:1px solid rgba(200,168,75,0.18);color:var(--white);font-family:'Outfit',sans-serif;font-size:0.8rem;outline:none;transition:border-color 0.2s;}
+.filter-input:focus{border-color:var(--gold-line);}
+.filter-input::placeholder{color:var(--muted);}
+.filter-select{padding:0.65rem 0.9rem;background:var(--black3);border:1px solid rgba(200,168,75,0.18);color:var(--white);font-family:'Outfit',sans-serif;font-size:0.8rem;outline:none;cursor:pointer;transition:border-color 0.2s;}
+.filter-select:focus{border-color:var(--gold-line);}
+.lawyers-search-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.1rem;}
+
+/* ── EMERGENCY ── */
+.emergency-page{background:var(--black);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5.5rem 2rem 3rem;text-align:center;}
+.emg-ring{width:90px;height:90px;border:1px solid rgba(217,79,79,0.35);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 2rem;font-size:2.4rem;animation:emgPulse 1.5s ease-in-out infinite;}
+@keyframes emgPulse{0%,100%{box-shadow:0 0 0 0 rgba(217,79,79,0.25)}50%{box-shadow:0 0 0 20px rgba(217,79,79,0)}}
+
+/* ── VERIFICATION ── */
+.verif-step{display:flex;gap:1.1rem;padding:1.1rem;background:var(--black3);border:1px solid rgba(200,168,75,0.07);margin-bottom:0.7rem;align-items:center;}
+.vs-done{color:var(--green);font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-left:auto;}
+.vs-pending{color:#f0d898;font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-left:auto;}
+.vs-rejected{color:var(--red);font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-left:auto;}
+
+/* ── TIMELINE ── */
+.timeline-wrap{padding-left:1.8rem;position:relative;}
+.timeline-wrap::before{content:'';position:absolute;left:0.52rem;top:0.3rem;bottom:0.3rem;width:1px;background:linear-gradient(to bottom,var(--gold-line),rgba(200,168,75,0.1));}
+.ts{display:flex;gap:1.1rem;margin-bottom:1.8rem;position:relative;}
+.ts-dot{width:16px;height:16px;border-radius:50%;border:2px solid;flex-shrink:0;margin-top:0.1rem;position:relative;z-index:1;background:var(--black);}
+.ts-dot.done{border-color:var(--green);background:var(--green);}
+.ts-dot.active{border-color:var(--gold);background:var(--gold);animation:dotPulse 1.5s ease-in-out infinite;}
+.ts-dot.pend{border-color:rgba(200,168,75,0.25);}
+.ts-title{font-size:0.88rem;font-weight:600;color:var(--white);}
+.ts-date{font-size:0.68rem;color:var(--gold);margin:0.08rem 0 0.25rem;}
+.ts-desc{font-size:0.77rem;color:var(--muted);line-height:1.55;}
+.ts.done .ts-title{color:var(--muted2);}
+
+/* ══════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════ */
+@media(max-width:768px){
+  nav{padding:0.9rem 1.2rem;}
+  .nav-links{display:none;}
+  .nav-right{display:none;}
+  .nav-hamburger{display:flex;}
+
+  .hero-inner{grid-template-columns:1fr;padding:7rem 1.5rem 4rem;}
+  .hero-right{display:none;}
+  .hero-numbers{flex-wrap:wrap;}
+  .hero-num-item{min-width:calc(50% - 1rem);}
+
+  .search-wrap{padding:2rem 1.5rem;}
+  .search-row{flex-direction:column;}
+  .search-input{border-right:1px solid rgba(200,168,75,0.18);}
+  .search-btn{padding:0.9rem;}
+
+  .how{padding:5rem 1.5rem;}
+  .steps-track{grid-template-columns:1fr 1fr;gap:1.5rem;}
+  .steps-track::after{display:none;}
+
+  .practice-header,.lawyers-header,.prac-pause-btn,.law-pause-wrap{padding-left:1.5rem;}
+  .prac-fade-l,.prac-fade-r,.law-fade-l,.law-fade-r{width:40px;}
+
+  .features{padding:5rem 1.5rem;}
+  .features-inner{grid-template-columns:1fr;}
+  .feat-vis{display:none;}
+
+  .testimonials{padding:5rem 1.5rem;}
+  .reviews-grid{grid-template-columns:1fr;}
+
+  .cta-banner{padding:4rem 1.5rem;}
+
+  .emergency-strip{padding:1rem 1.5rem;}
+
+  .footer-top{grid-template-columns:1fr 1fr;padding:3rem 1.5rem;gap:2rem;}
+  .footer-bottom{padding:1.2rem 1.5rem;flex-direction:column;text-align:center;}
+
+  .dash-layout{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .dash-main{padding:1.5rem;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+
+  .chat-layout{grid-template-columns:1fr;}
+  .chat-list-panel{display:none;}
+
+  .video-grid{grid-template-columns:1fr;}
+
+  .lawyers-search-grid{grid-template-columns:1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .form-grid .span2{grid-column:span 1;}
+
+  .lpv-stats-row{grid-template-columns:1fr 1fr;}
+  .footer-top{grid-template-columns:1fr;}
+}
+@media(max-width:480px){
+  .steps-track{grid-template-columns:1fr;}
+  .stats-row{grid-template-columns:1fr;}
+  .hero h1{font-size:2.4rem;}
+  .sec-title{font-size:1.6rem;}
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.hero-left-inner>*{animation:fadeUp 0.9s cubic-bezier(0.22,1,0.36,1) both;}
+.hero-left-inner>*:nth-child(1){animation-delay:0.1s}
+.hero-left-inner>*:nth-child(2){animation-delay:0.25s}
+.hero-left-inner>*:nth-child(3){animation-delay:0.4s}
+.hero-left-inner>*:nth-child(4){animation-delay:0.55s}
+.hero-left-inner>*:nth-child(5){animation-delay:0.7s}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══ MODALS ══ -->
+<!-- LOGIN -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('loginModal')">&#10005;</button>
+    <h2>Welcome Back</h2>
+    <p class="sub">Sign in to your LexSa account</p>
+    <div class="role-toggle">
+      <button class="role-btn active" onclick="setRole(this,'client')">Client</button>
+      <button class="role-btn" onclick="setRole(this,'lawyer')">Lawyer</button>
+      <button class="role-btn" onclick="setRole(this,'admin')">Admin</button>
+    </div>
+    <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com"/></div>
+    <div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="Enter password"/></div>
+    <button class="btn-gold btn-full" onclick="handleLogin()"><span>Sign In</span></button>
+    <div class="form-divider">or</div>
+    <p style="text-align:center;font-size:0.8rem;color:var(--muted);">No account? <span class="form-link" onclick="switchModal('loginModal','signupModal')">Sign Up</span></p>
+  </div>
+</div>
+
+<!-- SIGNUP -->
+<div class="modal-overlay" id="signupModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('signupModal')">&#10005;</button>
+    <h2>Create Account</h2>
+    <p class="sub">Join LexSa — India's legal platform</p>
+    <div class="role-toggle">
+      <button class="role-btn active" id="srClient" onclick="setSignupRole('client')">Client</button>
+      <button class="role-btn" id="srLawyer" onclick="setSignupRole('lawyer')">Lawyer</button>
+    </div>
+    <div class="form-group"><label>Full Name</label><input type="text" id="signupName" placeholder="Your full name"/></div>
+    <div class="form-group"><label>Email</label><input type="email" id="signupEmail" placeholder="you@example.com"/></div>
+    <div class="form-group"><label>Password</label><input type="password" id="signupPass" placeholder="Min. 8 characters"/></div>
+    <div class="form-group" id="lawyerSpecField" style="display:none;"><label>Specialization</label><input type="text" placeholder="e.g. Family Law"/></div>
+    <button class="btn-gold btn-full" onclick="handleSignup()"><span>Create Account</span></button>
+    <div class="form-divider">or</div>
+    <p style="text-align:center;font-size:0.8rem;color:var(--muted);">Have an account? <span class="form-link" onclick="switchModal('signupModal','loginModal')">Sign In</span></p>
+  </div>
+</div>
+
+<!-- CASE SUBMIT -->
+<div class="modal-overlay" id="caseModal">
+  <div class="modal" style="max-width:540px;">
+    <button class="modal-close" onclick="closeModal('caseModal')">&#10005;</button>
+    <h2>Submit Case</h2>
+    <p class="sub">Describe your issue to get matched with the right lawyer</p>
+    <div class="form-group"><label>Case Category</label>
+      <select id="caseCategory">
+        <option value="">Select category...</option>
+        <option>Family Law</option><option>Criminal Defense</option><option>Corporate Law</option>
+        <option>Property Disputes</option><option>Consumer Rights</option><option>Labour and Employment</option>
+        <option>Cyber Crime</option><option>Tax Law</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Description (max 60 words)</label>
+      <textarea id="caseDesc" rows="4" placeholder="Briefly describe your legal issue..." oninput="updateCharCount()"></textarea>
+      <div class="char-count"><span id="wordCount">0</span> / 60 words</div>
+    </div>
+    <div class="form-group"><label>Your Location</label><input type="text" placeholder="e.g. Delhi, NCR"/></div>
+    <div class="form-group"><label>Upload Documents (optional)</label><input type="file" style="color:var(--muted);font-size:0.8rem;" multiple/></div>
+    <button class="btn-gold btn-full" onclick="submitCase()"><span>Submit Case</span></button>
+  </div>
+</div>
+
+<!-- BOOK CONSULTATION -->
+<div class="modal-overlay" id="bookModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('bookModal')">&#10005;</button>
+    <h2>Book Consultation</h2>
+    <p class="sub" id="bookWith">Select your preferred consultation type</p>
+    <div class="form-group"><label>Type</label>
+      <select id="consultType">
+        <option>Chat — Free (10 min)</option>
+        <option>Video Call — Rs 500/hr</option>
+        <option>Voice Call — Rs 300/hr</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Date</label><input type="date"/></div>
+    <div class="form-group"><label>Time</label><input type="time"/></div>
+    <div class="form-group"><label>Brief Description</label><textarea rows="3" placeholder="What would you like to discuss?"></textarea></div>
+    <button class="btn-gold btn-full" onclick="confirmBooking()"><span>Confirm</span></button>
+  </div>
+</div>
+
+<!-- PAYMENT -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal" style="max-width:500px;">
+    <button class="modal-close" onclick="closeModal('paymentModal')">&#10005;</button>
+    <h2>Payment</h2>
+    <p class="sub">Secure checkout via LexSa Pay</p>
+    <div style="background:var(--black4);border:1px solid rgba(200,168,75,0.12);padding:1.4rem;margin-bottom:1.3rem;">
+      <div style="display:flex;justify-content:space-between;padding:0.55rem 0;border-bottom:1px solid rgba(200,168,75,0.07);font-size:0.82rem;color:var(--muted2);"><span>Video Consultation (1hr)</span><span>Rs 500</span></div>
+      <div style="display:flex;justify-content:space-between;padding:0.55rem 0;border-bottom:1px solid rgba(200,168,75,0.07);font-size:0.82rem;color:var(--muted2);"><span>Platform Fee</span><span>Rs 50</span></div>
+      <div style="display:flex;justify-content:space-between;padding:0.55rem 0;font-size:0.88rem;font-weight:700;color:var(--gold);"><span>Total</span><span>Rs 649</span></div>
+    </div>
+    <div style="display:flex;gap:0.7rem;flex-wrap:wrap;margin-bottom:1.3rem;">
+      <button class="btn-outline active-pm" onclick="selectPM(this)">UPI</button>
+      <button class="btn-outline" onclick="selectPM(this)">Card</button>
+      <button class="btn-outline" onclick="selectPM(this)">Net Banking</button>
+    </div>
+    <div class="form-group"><label>UPI ID</label><input type="text" placeholder="yourname@upi"/></div>
+    <button class="btn-gold btn-full" onclick="processPayment()"><span>Pay Rs 649</span></button>
+  </div>
+</div>
+
+<!-- REVIEW -->
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('reviewModal')">&#10005;</button>
+    <h2>Write a Review</h2>
+    <p class="sub">Share your experience</p>
+    <div class="form-group"><label>Rating</label>
+      <div id="starRating" style="display:flex;gap:0.4rem;margin-top:0.25rem;">
+        <span style="font-size:1.7rem;cursor:pointer;color:var(--gold);" onclick="setRating(1)">&#9733;</span>
+        <span style="font-size:1.7rem;cursor:pointer;color:var(--gold);" onclick="setRating(2)">&#9733;</span>
+        <span style="font-size:1.7rem;cursor:pointer;color:var(--gold);" onclick="setRating(3)">&#9733;</span>
+        <span style="font-size:1.7rem;cursor:pointer;color:var(--gold);" onclick="setRating(4)">&#9733;</span>
+        <span style="font-size:1.7rem;cursor:pointer;color:var(--muted);" onclick="setRating(5)">&#9733;</span>
+      </div>
+    </div>
+    <div class="form-group"><label>Review</label><textarea rows="4" placeholder="Describe your experience..."></textarea></div>
+    <button class="btn-gold btn-full" onclick="submitReview()"><span>Submit</span></button>
+  </div>
+</div>
+
+<!-- REFUND -->
+<div class="modal-overlay" id="refundModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('refundModal')">&#10005;</button>
+    <h2>Request Refund</h2>
+    <p class="sub">Refunds processed within 3–5 business days</p>
+    <div class="form-group"><label>Reason</label>
+      <select><option>Lawyer did not respond</option><option>Consultation not started</option><option>Technical issue</option><option>Other</option></select>
+    </div>
+    <div class="form-group"><label>Details</label><textarea rows="3" placeholder="Describe the issue..."></textarea></div>
+    <button class="btn-gold btn-full" onclick="submitRefund()"><span>Submit Request</span></button>
+  </div>
+</div>
+
+<!-- NAVBAR -->
+<nav id="mainNav">
+  <span class="logo" onclick="showPage('landing')">Lex<em>Sa</em></span>
+  <ul class="nav-links" id="navLinks">
+    <li><a onclick="scrollToSection('how')">How It Works</a></li>
+    <li><a onclick="scrollToSection('practice')">Practice Areas</a></li>
+    <li><a onclick="showPage('findLawyer')">Find Lawyers</a></li>
+    <li><a onclick="scrollToSection('features')">Features</a></li>
+  </ul>
+  <div class="nav-right" id="navRight">
+    <button class="nav-btn" onclick="openModal('loginModal')">Sign In</button>
+    <button class="nav-btn filled" onclick="openModal('signupModal')">Get Started</button>
+  </div>
+  <button class="nav-hamburger" id="hamburger" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <a onclick="scrollToSection('how');toggleMenu()">How It Works</a>
+  <a onclick="scrollToSection('practice');toggleMenu()">Practice Areas</a>
+  <a onclick="showPage('findLawyer');toggleMenu()">Find Lawyers</a>
+  <a onclick="scrollToSection('features');toggleMenu()">Features</a>
+  <button onclick="openModal('loginModal');toggleMenu()">Sign In</button>
+  <button onclick="openModal('signupModal');toggleMenu()">Get Started</button>
+</div>
+
+<!-- ══ PAGE: LANDING ══ -->
+<div class="page active" id="page-landing">
+
+  <!-- HERO -->
+  <section class="hero">
+    <canvas id="threeCanvas"></canvas>
+    <div class="hero-glow"></div>
+    <div class="hero-glow2"></div>
+    <div class="hero-inner">
+      <div class="hero-left-inner">
+        <div class="hero-eyebrow"><span class="hero-dot"></span>India's Premier Legal Platform</div>
+        <h1>Justice Within<br/><span class="italic-gold">Your Reach,</span><br/><span class="outlined">Always.</span></h1>
+        <p class="hero-body">LexSa connects you with verified, experienced lawyers across all practice areas — from consultation to courtroom.</p>
+        <div class="hero-btns">
+          <button class="btn-gold" onclick="showPage('findLawyer')"><span>Find Your Lawyer</span></button>
+          <button class="btn-ghost" onclick="scrollToSection('how')">How It Works</button>
+        </div>
+        <div class="hero-numbers">
+          <div class="hero-num-item"><div class="hero-num-val">1,200+</div><div class="hero-num-lbl">Verified Lawyers</div></div>
+          <div class="hero-num-item"><div class="hero-num-val">18K+</div><div class="hero-num-lbl">Cases Resolved</div></div>
+          <div class="hero-num-item"><div class="hero-num-val">4.9</div><div class="hero-num-lbl">Avg. Rating</div></div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div style="position:relative;width:340px;height:430px;margin:0 auto;">
+          <div class="verified-badge">Verified Profile</div>
+          <div class="profile-card">
+            <div class="p-badge">Available Today</div>
+            <div class="p-av-row">
+              <div class="p-av">PS</div>
+              <div><div class="p-name">Adv. Priya Sharma</div><div class="p-spec">Family &amp; Divorce Law</div></div>
+            </div>
+            <div class="p-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+            <div class="p-meta">12 years experience · Delhi High Court<br/>Available for consultation today</div>
+            <div class="p-stats">
+              <div class="p-stat"><div class="p-stat-v">98%</div><div class="p-stat-l">Win Rate</div></div>
+              <div class="p-stat"><div class="p-stat-v">280+</div><div class="p-stat-l">Cases</div></div>
+              <div class="p-stat"><div class="p-stat-v">12yr</div><div class="p-stat-l">Exp.</div></div>
+            </div>
+          </div>
+          <div class="profile-mini">
+            <div class="pm-online"><span class="pm-dot"></span>Online Now</div>
+            <div class="pm-name">Adv. Rahul Khanna</div>
+            <div class="pm-spec">Corporate Law · 9 yrs</div>
+            <button class="pm-btn" onclick="openBookModal('Adv. Rahul Khanna')">Quick Consult</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEARCH -->
+  <div class="search-wrap" id="consult">
+    <div class="search-inner">
+      <div class="search-label">Describe your <em>legal problem</em> — we'll find the right lawyer.</div>
+      <div class="search-row">
+        <input class="search-input" id="heroSearch" type="text" placeholder="e.g. Property dispute in Lucknow..."/>
+        <button class="search-btn" onclick="handleHeroSearch()">Find Lawyer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <section class="how" id="how">
+    <div class="how-header">
+      <div class="eyebrow center">Simple Process</div>
+      <h2 class="sec-title">From Problem to <em>Resolution</em> in 4 Steps</h2>
+    </div>
+    <div class="steps-track">
+      <div class="step-item" onclick="openModal('caseModal')">
+        <div class="step-circle"><div class="step-num">01</div></div>
+        <h3>Describe Your Case</h3>
+        <p>Tell us your legal issue and select the relevant practice area for precise matching.</p>
+      </div>
+      <div class="step-item" onclick="showPage('findLawyer')">
+        <div class="step-circle"><div class="step-num">02</div></div>
+        <h3>Browse Lawyers</h3>
+        <p>View verified profiles with qualifications, experience and client ratings.</p>
+      </div>
+      <div class="step-item" onclick="showPage('lawyerProfile')">
+        <div class="step-circle"><div class="step-num">03</div></div>
+        <h3>Consult &amp; Connect</h3>
+        <p>Chat, call or video consult with your chosen lawyer securely.</p>
+      </div>
+      <div class="step-item" onclick="showPage('clientDash')">
+        <div class="step-circle"><div class="step-num">04</div></div>
+        <h3>Track Your Case</h3>
+        <p>Monitor progress and receive updates at every stage of your legal journey.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRACTICE AREAS — DUAL ROW SLIDER -->
+  <section class="practice" id="practice">
+    <div class="practice-header">
+      <div>
+        <div class="eyebrow">Practice Areas</div>
+        <h2 class="sec-title">Every Legal Matter,<br/><em>One Platform</em></h2>
+      </div>
+      <button class="btn-outline" onclick="showPage('findLawyer')">View All</button>
+    </div>
+    <div class="prac-slider-outer">
+      <div class="prac-fade-l"></div>
+      <div class="prac-fade-r"></div>
+      <!-- Row 1 — scrolls left -->
+      <div class="prac-row row1" id="pracRow1">
+        <div class="prac-card" onclick="filterAndGo('Family Law')"><span class="prac-num-bg">01</span><div class="prac-icon">&#128106;</div><h3>Family Law</h3><p>Divorce, custody, maintenance and matrimonial disputes.</p><div class="prac-count-badge">240+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Criminal Defense')"><span class="prac-num-bg">02</span><div class="prac-icon">&#9878;&#65039;</div><h3>Criminal Defense</h3><p>FIRs, bail, trial representation across all criminal matters.</p><div class="prac-count-badge">180+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Corporate Law')"><span class="prac-num-bg">03</span><div class="prac-icon">&#128203;</div><h3>Corporate Law</h3><p>Incorporation, contracts, mergers and commercial litigation.</p><div class="prac-count-badge">150+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Property Disputes')"><span class="prac-num-bg">04</span><div class="prac-icon">&#127968;</div><h3>Property Disputes</h3><p>Land, title disputes, RERA and tenant-landlord matters.</p><div class="prac-count-badge">200+ Specialists</div></div>
+        <!-- Clone for seamless loop -->
+        <div class="prac-card" onclick="filterAndGo('Family Law')"><span class="prac-num-bg">01</span><div class="prac-icon">&#128106;</div><h3>Family Law</h3><p>Divorce, custody, maintenance and matrimonial disputes.</p><div class="prac-count-badge">240+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Criminal Defense')"><span class="prac-num-bg">02</span><div class="prac-icon">&#9878;&#65039;</div><h3>Criminal Defense</h3><p>FIRs, bail, trial representation across all criminal matters.</p><div class="prac-count-badge">180+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Corporate Law')"><span class="prac-num-bg">03</span><div class="prac-icon">&#128203;</div><h3>Corporate Law</h3><p>Incorporation, contracts, mergers and commercial litigation.</p><div class="prac-count-badge">150+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Property Disputes')"><span class="prac-num-bg">04</span><div class="prac-icon">&#127968;</div><h3>Property Disputes</h3><p>Land, title disputes, RERA and tenant-landlord matters.</p><div class="prac-count-badge">200+ Specialists</div></div>
+      </div>
+      <!-- Row 2 — scrolls right -->
+      <div class="prac-row row2" id="pracRow2">
+        <div class="prac-card" onclick="filterAndGo('Consumer Rights')"><span class="prac-num-bg">05</span><div class="prac-icon">&#128737;</div><h3>Consumer Rights</h3><p>Complaints, defective products and service deficiency claims.</p><div class="prac-count-badge">120+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Labour and Employment')"><span class="prac-num-bg">06</span><div class="prac-icon">&#128188;</div><h3>Labour &amp; Employment</h3><p>Wrongful termination, PF, ESI and employment contracts.</p><div class="prac-count-badge">90+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Cyber Crime')"><span class="prac-num-bg">07</span><div class="prac-icon">&#128187;</div><h3>Cyber Crime</h3><p>Online fraud, cyberbullying and digital rights violations.</p><div class="prac-count-badge">60+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Tax Law')"><span class="prac-num-bg">08</span><div class="prac-icon">&#128196;</div><h3>Tax Law</h3><p>GST disputes, income tax appeals and corporate tax planning.</p><div class="prac-count-badge">75+ Specialists</div></div>
+        <!-- Clone -->
+        <div class="prac-card" onclick="filterAndGo('Consumer Rights')"><span class="prac-num-bg">05</span><div class="prac-icon">&#128737;</div><h3>Consumer Rights</h3><p>Complaints, defective products and service deficiency claims.</p><div class="prac-count-badge">120+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Labour and Employment')"><span class="prac-num-bg">06</span><div class="prac-icon">&#128188;</div><h3>Labour &amp; Employment</h3><p>Wrongful termination, PF, ESI and employment contracts.</p><div class="prac-count-badge">90+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Cyber Crime')"><span class="prac-num-bg">07</span><div class="prac-icon">&#128187;</div><h3>Cyber Crime</h3><p>Online fraud, cyberbullying and digital rights violations.</p><div class="prac-count-badge">60+ Specialists</div></div>
+        <div class="prac-card" onclick="filterAndGo('Tax Law')"><span class="prac-num-bg">08</span><div class="prac-icon">&#128196;</div><h3>Tax Law</h3><p>GST disputes, income tax appeals and corporate tax planning.</p><div class="prac-count-badge">75+ Specialists</div></div>
+      </div>
+    </div>
+    <button class="prac-pause-btn" id="pracPauseBtn" onclick="togglePracPause()">Pause Slider</button>
+  </section>
+
+  <!-- LAWYERS SLIDER -->
+  <section class="lawyers" id="lawyers">
+    <div class="lawyers-header">
+      <div>
+        <div class="eyebrow">Featured Lawyers</div>
+        <h2 class="sec-title">Meet Our Trusted <em>Legal Experts</em></h2>
+      </div>
+    </div>
+    <div class="lawyers-slider-outer">
+      <div class="law-fade-l"></div>
+      <div class="law-fade-r"></div>
+      <div class="lawyers-track" id="lawyersTrack">
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#c8a84b,#7a5c20)">PS</div><div><div class="l-name">Adv. Priya Sharma</div><div class="l-spec">Family Law</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9733; <span>(128)</span></div><div class="l-bio">12 years at Delhi High Court. Divorce, custody and matrimonial disputes.</div><div class="l-tags"><span class="l-tag">Divorce</span><span class="l-tag">Custody</span><span class="l-tag">Hindi/English</span></div><button class="l-consult" onclick="showPage('lawyerProfile')">Book Consultation</button></div>
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#8a6020,#c9a84c)">RV</div><div><div class="l-name">Adv. Rajiv Verma</div><div class="l-spec">Criminal Defense</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9733; <span>(214)</span></div><div class="l-bio">18 years defending clients in Sessions and High Courts across UP.</div><div class="l-tags"><span class="l-tag">Bail</span><span class="l-tag">Trial</span><span class="l-tag">FIR</span></div><button class="l-consult" onclick="openBookModal('Adv. Rajiv Verma')">Book Consultation</button></div>
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#1a2a1a,#2a5c2a)">NK</div><div><div class="l-name">Adv. Neha Kapoor</div><div class="l-spec">Corporate Law</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9734; <span>(97)</span></div><div class="l-bio">Corporate lawyer advising startups on contracts, compliance and M&amp;A.</div><div class="l-tags"><span class="l-tag">Startups</span><span class="l-tag">Contracts</span></div><button class="l-consult" onclick="openBookModal('Adv. Neha Kapoor')">Book Consultation</button></div>
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#2a1a2a,#5c205c)">SN</div><div><div class="l-name">Adv. Suresh Nair</div><div class="l-spec">Property Disputes</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9733; <span>(183)</span></div><div class="l-bio">15 years resolving land, RERA and real estate disputes across India.</div><div class="l-tags"><span class="l-tag">Land</span><span class="l-tag">RERA</span></div><button class="l-consult" onclick="openBookModal('Adv. Suresh Nair')">Book Consultation</button></div>
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#1a2a2a,#205c5c)">KS</div><div><div class="l-name">Adv. Kavita Singh</div><div class="l-spec">Consumer Rights</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9734; <span>(62)</span></div><div class="l-bio">Expert in consumer forum cases, product liability and service disputes.</div><div class="l-tags"><span class="l-tag">Consumer</span><span class="l-tag">Forum</span></div><button class="l-consult" onclick="openBookModal('Adv. Kavita Singh')">Book Consultation</button></div>
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#2a2a1a,#5c4a20)">MT</div><div><div class="l-name">Adv. Manish Tiwari</div><div class="l-spec">Labour Law</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9733; <span>(114)</span></div><div class="l-bio">10 years handling employment, PF, ESI and wrongful termination cases.</div><div class="l-tags"><span class="l-tag">Employment</span><span class="l-tag">PF/ESI</span></div><button class="l-consult" onclick="openBookModal('Adv. Manish Tiwari')">Book Consultation</button></div>
+        <!-- Clone set -->
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#c8a84b,#7a5c20)">PS</div><div><div class="l-name">Adv. Priya Sharma</div><div class="l-spec">Family Law</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9733; <span>(128)</span></div><div class="l-bio">12 years at Delhi High Court. Divorce, custody and matrimonial disputes.</div><div class="l-tags"><span class="l-tag">Divorce</span><span class="l-tag">Custody</span></div><button class="l-consult" onclick="showPage('lawyerProfile')">Book Consultation</button></div>
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#8a6020,#c9a84c)">RV</div><div><div class="l-name">Adv. Rajiv Verma</div><div class="l-spec">Criminal Defense</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9733; <span>(214)</span></div><div class="l-bio">18 years defending clients in Sessions and High Courts across UP.</div><div class="l-tags"><span class="l-tag">Bail</span><span class="l-tag">Trial</span></div><button class="l-consult" onclick="openBookModal('Adv. Rajiv Verma')">Book Consultation</button></div>
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#1a2a1a,#2a5c2a)">NK</div><div><div class="l-name">Adv. Neha Kapoor</div><div class="l-spec">Corporate Law</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9734; <span>(97)</span></div><div class="l-bio">Corporate lawyer advising startups on contracts, compliance and M&amp;A.</div><div class="l-tags"><span class="l-tag">Startups</span></div><button class="l-consult" onclick="openBookModal('Adv. Neha Kapoor')">Book Consultation</button></div>
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#2a1a2a,#5c205c)">SN</div><div><div class="l-name">Adv. Suresh Nair</div><div class="l-spec">Property Disputes</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9733; <span>(183)</span></div><div class="l-bio">15 years resolving land, RERA and real estate disputes.</div><div class="l-tags"><span class="l-tag">Land</span><span class="l-tag">RERA</span></div><button class="l-consult" onclick="openBookModal('Adv. Suresh Nair')">Book Consultation</button></div>
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#1a2a2a,#205c5c)">KS</div><div><div class="l-name">Adv. Kavita Singh</div><div class="l-spec">Consumer Rights</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9734; <span>(62)</span></div><div class="l-bio">Expert in consumer forum cases and product liability.</div><div class="l-tags"><span class="l-tag">Consumer</span></div><button class="l-consult" onclick="openBookModal('Adv. Kavita Singh')">Book Consultation</button></div>
+        <div class="l-card"><div class="l-top"><div class="l-av" style="background:linear-gradient(135deg,#2a2a1a,#5c4a20)">MT</div><div><div class="l-name">Adv. Manish Tiwari</div><div class="l-spec">Labour Law</div></div></div><div class="l-stars">&#9733;&#9733;&#9733;&#9733;&#9733; <span>(114)</span></div><div class="l-bio">10 years handling employment, PF, ESI cases.</div><div class="l-tags"><span class="l-tag">Employment</span></div><button class="l-consult" onclick="openBookModal('Adv. Manish Tiwari')">Book Consultation</button></div>
+      </div>
+    </div>
+    <div class="law-pause-wrap">
+      <button class="law-pause-btn" id="lawPauseBtn" onclick="toggleLawPause()">Pause</button>
+      <span style="font-size:0.72rem;color:var(--muted);">Hover over a card to pause automatically</span>
+      <button class="btn-outline btn-sm" style="margin-left:auto;" onclick="showPage('findLawyer')">View All Lawyers</button>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="features-inner">
+      <div class="feat-vis">
+        <div class="fmock a">
+          <div class="fmock-title">Case Progress</div>
+          <div class="bar-row"><div class="bar-label">Documentation</div><div class="bar-bg"><div class="bar-fill" style="width:85%"></div></div></div>
+          <div class="bar-row"><div class="bar-label">Court Filing</div><div class="bar-bg"><div class="bar-fill" style="width:60%"></div></div></div>
+          <div class="bar-row"><div class="bar-label">Hearing Prep</div><div class="bar-bg"><div class="bar-fill" style="width:40%"></div></div></div>
+          <div class="bar-meta">3 of 4 stages complete</div>
+        </div>
+        <div class="fmock b">
+          <div class="fmock-title">Nearby Lawyers</div>
+          <div style="font-size:1.4rem;margin:0.4rem 0;">&#128205;</div>
+          <div style="font-size:0.7rem;color:var(--muted);">12 lawyers within 5 km</div>
+        </div>
+        <div class="fmock c">
+          <div class="fmock-title">Case Status</div>
+          <div style="font-size:0.75rem;color:var(--green);font-weight:600;">&#9679; In Consultation</div>
+        </div>
+      </div>
+      <div>
+        <div class="eyebrow">Platform Features</div>
+        <h2 class="sec-title">Built for the<br/><em>Modern Legal World</em></h2>
+        <div class="feat-list">
+          <div class="feat-row"><div class="feat-ico">&#128241;</div><div><h3>Video &amp; Chat Consultations</h3><p>Chat free for 10 minutes, then continue with paid video or voice call. Flexible pricing set by lawyers.</p></div></div>
+          <div class="feat-row"><div class="feat-ico">&#128196;</div><div><h3>Secure Document Upload</h3><p>Share case documents with end-to-end encryption. Your lawyer reviews them before consultation.</p></div></div>
+          <div class="feat-row"><div class="feat-ico">&#128202;</div><div><h3>Case Progress Tracker</h3><p>Monitor every stage with real-time updates, hearing dates and milestone tracking.</p></div></div>
+          <div class="feat-row"><div class="feat-ico">&#128205;</div><div><h3>Nearest Lawyer Finder</h3><p>Locate verified lawyers near you using GPS for urgent in-person consultations.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="testimonials">
+    <div class="testimonials-header">
+      <div class="eyebrow center">Client Stories</div>
+      <h2 class="sec-title">Real People, <em>Real Justice</em></h2>
+    </div>
+    <div class="reviews-grid">
+      <div class="r-card"><div class="r-quote-mark">"</div><div class="r-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="r-text">LexSa helped me find a family lawyer within minutes. The whole process was transparent and my case was resolved in 3 months.</p><div class="r-person"><div class="r-av">A</div><div><div class="r-name">Aisha Siddiqui</div><div class="r-case">Divorce · Lucknow</div></div></div></div>
+      <div class="r-card"><div class="r-quote-mark">"</div><div class="r-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="r-text">I was cheated in a property deal and had no idea who to approach. LexSa matched me with an excellent property lawyer who got my money back.</p><div class="r-person"><div class="r-av">M</div><div><div class="r-name">Mohit Gupta</div><div class="r-case">Property Dispute · Delhi</div></div></div></div>
+      <div class="r-card"><div class="r-quote-mark">"</div><div class="r-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</div><p class="r-text">As a startup founder I needed quick corporate legal advice. The video consultation feature saved me hours.</p><div class="r-person"><div class="r-av">S</div><div><div class="r-name">Sneha Rathi</div><div class="r-case">Corporate Law · Mumbai</div></div></div></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-banner">
+    <h2>Justice Shouldn't Be a Privilege.</h2>
+    <p>Join thousands of Indians who found the right lawyer with LexSa.</p>
+    <div class="cta-btns">
+      <button class="btn-dark" onclick="showPage('findLawyer')">Find a Lawyer</button>
+      <button class="btn-outline-dark" onclick="scrollToSection('how')">Learn More</button>
+    </div>
+  </section>
+
+  <!-- EMERGENCY STRIP -->
+  <div class="emergency-strip">
+    <div class="es-text"><strong>Emergency Legal Help</strong><span>Connect with a lawyer in under 2 minutes for urgent matters.</span></div>
+    <button class="btn-red" onclick="showPage('emergency')">Get Emergency Help</button>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <span class="logo" onclick="showPage('landing')">Lex<em>Sa</em></span>
+        <p>Connecting citizens with trusted legal experts across India. Justice made accessible, affordable and transparent.</p>
+      </div>
+      <div class="footer-col"><h4>Platform</h4><ul>
+        <li><a onclick="showPage('findLawyer')">Find a Lawyer</a></li>
+        <li><a onclick="scrollToSection('practice')">Practice Areas</a></li>
+        <li><a onclick="showPage('clientDash')">Case Tracker</a></li>
+      </ul></div>
+      <div class="footer-col"><h4>For Lawyers</h4><ul>
+        <li><a onclick="openModal('signupModal')">Join LexSa</a></li>
+        <li><a onclick="showPage('lawyerDash')">Lawyer Dashboard</a></li>
+        <li><a onclick="showPage('lawyerVerification')">Verification</a></li>
+      </ul></div>
+      <div class="footer-col"><h4>Company</h4><ul>
+        <li><a onclick="toast('About Us — coming soon')">About Us</a></li>
+        <li><a onclick="toast('Blog — coming soon')">Blog</a></li>
+        <li><a onclick="toast('Privacy Policy — coming soon')">Privacy Policy</a></li>
+        <li><a onclick="toast('Terms — coming soon')">Terms of Service</a></li>
+      </ul></div>
+    </div>
+    <div class="footer-bottom">
+      <p>2025 LexSa. All rights reserved. India's Legal Marketplace.</p>
+      <p>Made for justice</p>
+    </div>
+  </footer>
+</div><!-- end landing -->
+
+<!-- ══ PAGE: FIND LAWYER ══ -->
+<div class="page" id="page-findLawyer">
+  <div class="dash-layout">
+    <aside class="sidebar">
+      <div style="padding:1.2rem 1.5rem;border-bottom:1px solid rgba(200,168,75,0.08);font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;">Find a Lawyer</div>
+      <ul class="sidebar-nav" style="margin-top:0.8rem;">
+        <li><a class="active" onclick="renderLawyerGrid()">All Lawyers</a></li>
+        <li><a onclick="filterSpec('Family Law')">Family Law</a></li>
+        <li><a onclick="filterSpec('Criminal Defense')">Criminal Defense</a></li>
+        <li><a onclick="filterSpec('Corporate Law')">Corporate Law</a></li>
+        <li><a onclick="filterSpec('Property Disputes')">Property Disputes</a></li>
+        <li><a onclick="filterSpec('Consumer Rights')">Consumer Rights</a></li>
+        <li><a onclick="filterSpec('Labour and Employment')">Labour &amp; Employment</a></li>
+        <div class="sidebar-section-lbl">Smart Matching</div>
+        <li><a onclick="toast('AI-matched picks loaded')">AI-Matched for Me</a></li>
+        <li><a onclick="toast('Showing lawyers near your location')">Nearest to Me</a></li>
+        <li><a onclick="toast('Showing top rated lawyers')">Top Rated</a></li>
+      </ul>
+    </aside>
+    <div class="dash-main">
+      <div class="dash-header"><h1>Find a Lawyer</h1><p id="findLawyerSub">All verified lawyers across India</p></div>
+      <div class="filter-bar">
+        <input class="filter-input" type="text" placeholder="Search by name or keyword..." oninput="liveSearch(this.value)" id="lwSearch" style="flex:1;min-width:180px;"/>
+        <select class="filter-select" onchange="applyFilter()" id="fSpec">
+          <option value="">All Specializations</option>
+          <option>Family Law</option><option>Criminal Defense</option><option>Corporate Law</option>
+          <option>Property Disputes</option><option>Consumer Rights</option><option>Labour and Employment</option>
+        </select>
+        <select class="filter-select" onchange="applyFilter()" id="fCity">
+          <option value="">All Cities</option>
+          <option>Delhi</option><option>Mumbai</option><option>Lucknow</option><option>Bangalore</option><option>Chennai</option>
+        </select>
+        <select class="filter-select" onchange="applyFilter()" id="fSort">
+          <option value="">Sort By</option>
+          <option>Rating</option><option>Price (Low)</option><option>Experience</option>
+        </select>
+      </div>
+      <div class="lawyers-search-grid" id="lawyerGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: LAWYER PROFILE ══ -->
+<div class="page" id="page-lawyerProfile">
+  <div class="dash-layout">
+    <aside class="sidebar">
+      <div style="padding:1.2rem 1.5rem;"><button class="btn-outline btn-sm" onclick="showPage('findLawyer')">Back to Search</button></div>
+      <ul class="sidebar-nav">
+        <li><a class="active">Profile</a></li>
+        <li><a onclick="toast('Reviews loaded')">Reviews (128)</a></li>
+        <li><a onclick="toast('Past cases loaded')">Past Cases</a></li>
+        <li><a onclick="showPage('chat')">Send Message</a></li>
+      </ul>
+    </aside>
+    <div class="dash-main" style="max-width:860px;">
+      <div class="lpv-header">
+        <div class="lpv-av" style="background:linear-gradient(135deg,#c8a84b,#7a5c20)">PS</div>
+        <div>
+          <div class="lpv-name">Adv. Priya Sharma</div>
+          <div class="lpv-spec">Family &amp; Divorce Law · Delhi High Court</div>
+          <div style="display:flex;gap:0.7rem;flex-wrap:wrap;align-items:center;margin-top:0.5rem;">
+            <span class="lpv-badge">Bar Council Verified</span>
+            <span style="color:var(--gold);font-size:0.8rem;">&#9733;&#9733;&#9733;&#9733;&#9733; 4.9</span>
+            <span style="font-size:0.72rem;color:var(--muted);">(128 reviews)</span>
+          </div>
+          <div style="margin-top:0.9rem;font-size:0.82rem;color:var(--muted2);line-height:1.6;max-width:480px;">Senior family law advocate with 12 years at Delhi High Court. Specialises in divorce, child custody battles and matrimonial property disputes. Known for a sensitive, client-first approach.</div>
+        </div>
+      </div>
+      <div class="lpv-stats-row">
+        <div class="lpv-stat"><div class="lpv-stat-v">98%</div><div class="lpv-stat-l">Win Rate</div></div>
+        <div class="lpv-stat"><div class="lpv-stat-v">280+</div><div class="lpv-stat-l">Cases</div></div>
+        <div class="lpv-stat"><div class="lpv-stat-v">12yr</div><div class="lpv-stat-l">Experience</div></div>
+        <div class="lpv-stat"><div class="lpv-stat-v">Rs 1,500/hr</div><div class="lpv-stat-l">Consultation</div></div>
+      </div>
+      <div class="section-card">
+        <div class="section-card-header"><span class="section-card-title">Book a Consultation</span></div>
+        <div class="consult-btns">
+          <button class="con-btn con-chat" onclick="showPage('chat')">Chat — Free 10 min</button>
+          <button class="con-btn con-video" onclick="showPage('videoCall')">Video Call</button>
+          <button class="con-btn con-voice" onclick="toast('Voice call initiated')">Voice Call</button>
+          <button class="con-btn con-book" onclick="openBookModal('Adv. Priya Sharma')">Book Appointment</button>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-card-header"><span class="section-card-title">Qualifications</span></div>
+        <table class="data-table">
+          <tr><td>Education</td><td>LLB, LLM — Delhi University, 2012</td></tr>
+          <tr><td>Bar Council</td><td>Delhi Bar Council · DC/2013/1284</td></tr>
+          <tr><td>Practice Courts</td><td>Delhi High Court, Supreme Court</td></tr>
+          <tr><td>Languages</td><td>Hindi, English</td></tr>
+        </table>
+      </div>
+      <div class="section-card">
+        <div class="section-card-header"><span class="section-card-title">Client Reviews</span><button class="btn-outline btn-sm" onclick="openModal('reviewModal')">Write a Review</button></div>
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div style="border-bottom:1px solid rgba(200,168,75,0.07);padding-bottom:1rem;"><div style="display:flex;justify-content:space-between;font-size:0.82rem;"><strong>Aisha Siddiqui</strong><span style="color:var(--gold);">&#9733;&#9733;&#9733;&#9733;&#9733;</span></div><p style="font-size:0.78rem;color:var(--muted2);margin-top:0.35rem;font-style:italic;">"Excellent work on my divorce case. Very professional and empathetic."</p></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:0.82rem;"><strong>Ravi Kumar</strong><span style="color:var(--gold);">&#9733;&#9733;&#9733;&#9733;&#9733;</span></div><p style="font-size:0.78rem;color:var(--muted2);margin-top:0.35rem;font-style:italic;">"Resolved my custody issue in 4 months. Highly recommended."</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: CLIENT DASHBOARD ══ -->
+<div class="page" id="page-clientDash">
+  <div class="dash-layout">
+    <aside class="sidebar">
+      <div class="sidebar-user">
+        <div class="sidebar-av" id="clientSidebarAv">AM</div>
+        <div class="sidebar-name" id="clientSidebarName">Loading...</div>
+        <div class="sidebar-role">Client Account</div>
+      </div>
+      <ul class="sidebar-nav">
+        <div class="sidebar-section-lbl">Main</div>
+        <li><a class="active" onclick="setClientSection('overview')">Overview</a></li>
+        <li><a onclick="setClientSection('myCases')">My Cases</a></li>
+        <li><a onclick="setClientSection('consultations')">Consultations</a></li>
+        <li><a onclick="showPage('chat')">Messages</a></li>
+        <li><a onclick="showPage('notifications')">Notifications <span style="background:var(--gold);color:var(--black);font-size:0.58rem;padding:0.08rem 0.35rem;margin-left:0.25rem;font-weight:700;">3</span></a></li>
+        <div class="sidebar-section-lbl">Actions</div>
+        <li><a onclick="openModal('caseModal')">Submit New Case</a></li>
+        <li><a onclick="showPage('findLawyer')">Find a Lawyer</a></li>
+        <li><a onclick="showPage('emergency')">Emergency Help</a></li>
+        <div class="sidebar-section-lbl">Account</div>
+        <li><a onclick="setClientSection('documents')">Documents</a></li>
+        <li><a onclick="setClientSection('payments')">Payments</a></li>
+        <li><a onclick="setClientSection('profile')">Profile</a></li>
+        <li><button onclick="handleLogout()">Logout</button></li>
+      </ul>
+    </aside>
+    <div class="dash-main">
+      <div id="cs-overview">
+        <div class="dash-header"><h1 id="clientGreeting">Good morning</h1><p>Overview of your legal matters</p></div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-val">3</div><div class="stat-label">Active Cases</div></div>
+          <div class="stat-card"><div class="stat-val">7</div><div class="stat-label">Resolved</div></div>
+          <div class="stat-card"><div class="stat-val">2</div><div class="stat-label">Upcoming Sessions</div></div>
+          <div class="stat-card"><div class="stat-val">Rs 4,200</div><div class="stat-label">Total Spent</div></div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-header"><span class="section-card-title">Active Cases</span><button class="btn-outline btn-sm" onclick="openModal('caseModal')">New Case</button></div>
+          <div class="case-list">
+            <div class="case-item"><div><div class="case-title">Property Dispute — Lucknow</div><div class="case-meta">Adv. Rajiv Verma · 3 weeks ago</div></div><span class="case-status s-accepted">Accepted</span><div class="case-actions"><button class="btn-outline btn-sm" onclick="showPage('chat')">Chat</button><button class="btn-outline btn-sm" onclick="showPage('caseTracker')">Track</button></div></div>
+            <div class="case-item"><div><div class="case-title">Divorce Proceedings</div><div class="case-meta">Adv. Priya Sharma · 6 weeks ago</div></div><span class="case-status s-consult">In Consultation</span><div class="case-actions"><button class="btn-outline btn-sm" onclick="showPage('chat')">Chat</button><button class="btn-outline btn-sm" onclick="showPage('videoCall')">Video</button></div></div>
+            <div class="case-item"><div><div class="case-title">Employment Claim</div><div class="case-meta">Awaiting lawyer acceptance</div></div><span class="case-status s-submitted">Submitted</span><div class="case-actions"><button class="btn-outline btn-sm" onclick="toast('Case details loaded')">View</button></div></div>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-header"><span class="section-card-title">Upcoming Consultations</span></div>
+          <table class="data-table">
+            <thead><tr><th>Lawyer</th><th>Type</th><th>Date</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>Adv. Priya Sharma</td><td>Video Call</td><td>Tomorrow 3:00 PM</td><td><button class="btn-outline btn-sm" onclick="showPage('videoCall')">Join</button></td></tr>
+              <tr><td>Adv. Rajiv Verma</td><td>Chat</td><td>Friday 11:00 AM</td><td><button class="btn-outline btn-sm" onclick="showPage('chat')">Open</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="cs-myCases" style="display:none;">
+        <div class="dash-header"><h1>My Cases</h1><p>All submitted and resolved cases</p></div>
+        <div style="margin-bottom:1.3rem;"><button class="btn-gold btn-sm" onclick="openModal('caseModal')"><span>Submit New Case</span></button></div>
+        <div class="case-list">
+          <div class="case-item"><div><div class="case-title">Property Dispute — Lucknow</div><div class="case-meta">Adv. Rajiv Verma · Property · 3 weeks ago</div></div><span class="case-status s-accepted">Accepted</span><div class="case-actions"><button class="btn-outline btn-sm" onclick="showPage('caseTracker')">Track</button><button class="btn-outline btn-sm" onclick="showPage('chat')">Chat</button></div></div>
+          <div class="case-item"><div><div class="case-title">Divorce Proceedings</div><div class="case-meta">Adv. Priya Sharma · Family · 6 weeks ago</div></div><span class="case-status s-consult">In Consultation</span><div class="case-actions"><button class="btn-outline btn-sm" onclick="showPage('videoCall')">Video Call</button></div></div>
+          <div class="case-item"><div><div class="case-title">Consumer Complaint</div><div class="case-meta">Adv. Neha Kapoor · Consumer · Resolved 2 months ago</div></div><span class="case-status s-done">Completed</span><div class="case-actions"><button class="btn-outline btn-sm" onclick="openModal('reviewModal')">Review</button></div></div>
+        </div>
+      </div>
+      <div id="cs-consultations" style="display:none;">
+        <div class="dash-header"><h1>Consultations</h1></div>
+        <div class="section-card">
+          <div class="section-card-header"><span class="section-card-title">Upcoming</span></div>
+          <table class="data-table">
+            <thead><tr><th>Lawyer</th><th>Type</th><th>Date</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>Adv. Priya Sharma</td><td>Video</td><td>Tomorrow 3 PM</td><td><button class="btn-outline btn-sm" onclick="showPage('videoCall')">Join</button></td></tr>
+              <tr><td>Adv. Rajiv Verma</td><td>Chat</td><td>Fri 11 AM</td><td><button class="btn-outline btn-sm" onclick="showPage('chat')">Open</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="section-card">
+          <div class="section-card-header"><span class="section-card-title">Past Consultations</span></div>
+          <table class="data-table">
+            <thead><tr><th>Lawyer</th><th>Type</th><th>Date</th><th>Amount</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>Adv. Neha Kapoor</td><td>Video</td><td>12 Nov 2024</td><td>Rs 1,500</td><td><button class="btn-outline btn-sm" onclick="openModal('reviewModal')">Review</button></td></tr>
+              <tr><td>Adv. Priya Sharma</td><td>Chat</td><td>5 Nov 2024</td><td>Free</td><td><button class="btn-outline btn-sm" onclick="openModal('reviewModal')">Review</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="cs-documents" style="display:none;">
+        <div class="dash-header"><h1>Documents</h1></div>
+        <div class="section-card">
+          <div style="border:2px dashed rgba(200,168,75,0.22);padding:2.5rem;text-align:center;margin-bottom:1.3rem;">
+            <div style="font-size:2rem;margin-bottom:0.8rem;">&#128196;</div>
+            <p style="color:var(--muted);font-size:0.82rem;margin-bottom:0.8rem;">Drag and drop files here or click to browse</p>
+            <input type="file" multiple style="display:none;" id="docUpload"/>
+            <button class="btn-outline" onclick="document.getElementById('docUpload').click()">Browse Files</button>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>File</th><th>Case</th><th>Uploaded</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>property_agreement.pdf</td><td>Property Dispute</td><td>2 days ago</td><td><button class="btn-outline btn-sm" onclick="toast('Document preview opened')">Preview</button></td></tr>
+              <tr><td>marriage_certificate.pdf</td><td>Divorce Case</td><td>1 week ago</td><td><button class="btn-outline btn-sm" onclick="toast('Document preview opened')">Preview</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="cs-payments" style="display:none;">
+        <div class="dash-header"><h1>Payments</h1></div>
+        <div class="section-card">
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>12 Nov</td><td>Video — Adv. Neha Kapoor</td><td>Rs 1,649</td><td style="color:var(--green)">Paid</td><td><button class="btn-outline btn-sm" onclick="toast('Receipt downloaded')">Receipt</button></td></tr>
+              <tr><td>1 Nov</td><td>Video — Adv. Rajiv Verma</td><td>Rs 2,049</td><td style="color:#f0d898">Refund Pending</td><td><button class="btn-outline btn-sm" onclick="openModal('refundModal')">Track</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:0.8rem;flex-wrap:wrap;margin-top:0.8rem;">
+          <button class="btn-outline" onclick="openModal('paymentModal')">Make a Payment</button>
+          <button class="btn-outline" onclick="openModal('refundModal')">Request Refund</button>
+        </div>
+      </div>
+      <div id="cs-profile" style="display:none;">
+        <div class="dash-header"><h1>My Profile</h1></div>
+        <div style="max-width:700px;">
+          <div class="ph-header">
+            <div class="ph-av" id="profileAv">AM</div>
+            <div>
+              <div class="ph-name" id="profileName">Loading...</div>
+              <div class="ph-role">Client · Member since Jan 2024</div>
+            </div>
+            <div style="margin-left:auto;"><button class="btn-outline" onclick="toast('Profile edit enabled')">Edit Profile</button></div>
+          </div>
+          <div class="section-card">
+            <div class="form-grid">
+              <div class="form-group"><label>Full Name</label><input type="text" id="profileNameInput"/></div>
+              <div class="form-group"><label>Phone</label><input type="text" placeholder="+91 XXXXX XXXXX"/></div>
+              <div class="form-group"><label>Email</label><input type="email" id="profileEmailInput"/></div>
+              <div class="form-group"><label>City</label><input type="text" placeholder="Your city"/></div>
+            </div>
+            <button class="btn-gold btn-sm" onclick="toast('Profile saved')"><span>Save Changes</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: LAWYER DASHBOARD ══ -->
+<div class="page" id="page-lawyerDash">
+  <div class="dash-layout">
+    <aside class="sidebar">
+      <div class="sidebar-user">
+        <div class="sidebar-av" id="lawyerSidebarAv">PS</div>
+        <div class="sidebar-name" id="lawyerSidebarName">Loading...</div>
+        <div class="sidebar-role">Verified Lawyer</div>
+      </div>
+      <ul class="sidebar-nav">
+        <div class="sidebar-section-lbl">Main</div>
+        <li><a class="active" onclick="setLawyerSection('overview')">Overview</a></li>
+        <li><a onclick="setLawyerSection('incoming')">Incoming Cases <span style="background:var(--red);color:var(--white);font-size:0.58rem;padding:0.08rem 0.35rem;margin-left:0.25rem;font-weight:700;">2</span></a></li>
+        <li><a onclick="setLawyerSection('schedule')">Schedule</a></li>
+        <li><a onclick="showPage('chat')">Client Messages</a></li>
+        <li><a onclick="showPage('notifications')">Notifications</a></li>
+        <div class="sidebar-section-lbl">Account</div>
+        <li><a onclick="setLawyerSection('earnings')">Earnings</a></li>
+        <li><a onclick="showPage('lawyerVerification')">Verification</a></li>
+        <li><a onclick="setLawyerSection('profile')">Edit Profile</a></li>
+        <li><button onclick="handleLogout()">Logout</button></li>
+      </ul>
+    </aside>
+    <div class="dash-main">
+      <div id="ls-overview">
+        <div class="dash-header"><h1 id="lawyerGreeting">Lawyer Dashboard</h1><p id="lawyerSubGreet">Welcome back</p></div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-val">2</div><div class="stat-label">New Requests</div></div>
+          <div class="stat-card"><div class="stat-val">5</div><div class="stat-label">Active Cases</div></div>
+          <div class="stat-card"><div class="stat-val">Rs 24,500</div><div class="stat-label">This Month</div></div>
+          <div class="stat-card"><div class="stat-val">4.9</div><div class="stat-label">Avg Rating</div></div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-header"><span class="section-card-title">New Case Requests</span></div>
+          <div class="case-list">
+            <div class="case-item"><div><div class="case-title">Divorce Case — Delhi</div><div class="case-meta">Client: Rahul K. · Family Law · 30 min ago</div></div><div class="case-actions"><button class="btn-gold btn-sm" onclick="acceptCase(this,'Divorce Case')"><span>Accept</span></button><button class="btn-red btn-sm" onclick="rejectCase(this)">Reject</button></div></div>
+            <div class="case-item"><div><div class="case-title">Child Custody Dispute</div><div class="case-meta">Client: Priyanka S. · Family Law · 1 hr ago</div></div><div class="case-actions"><button class="btn-gold btn-sm" onclick="acceptCase(this,'Child Custody')"><span>Accept</span></button><button class="btn-red btn-sm" onclick="rejectCase(this)">Reject</button></div></div>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-header"><span class="section-card-title">Today's Schedule</span></div>
+          <table class="data-table">
+            <thead><tr><th>Time</th><th>Client</th><th>Type</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>3:00 PM</td><td id="lawyerClientName1">Arjun Mehta</td><td>Video Call</td><td><button class="btn-outline btn-sm" onclick="showPage('videoCall')">Join</button></td></tr>
+              <tr><td>5:30 PM</td><td>Meera Singh</td><td>Chat</td><td><button class="btn-outline btn-sm" onclick="showPage('chat')">Open</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="ls-incoming" style="display:none;">
+        <div class="dash-header"><h1>Incoming Requests</h1></div>
+        <div class="case-list">
+          <div class="case-item"><div><div class="case-title">Divorce Case — Delhi</div><div class="case-meta">Client: Rahul K. · Family Law · 30 min ago</div></div><div class="case-actions"><button class="btn-gold btn-sm" onclick="acceptCase(this,'Divorce Case')"><span>Accept</span></button><button class="btn-red btn-sm" onclick="rejectCase(this)">Reject</button></div></div>
+          <div class="case-item"><div><div class="case-title">Child Custody Dispute</div><div class="case-meta">Client: Priyanka S. · 1 hr ago</div></div><div class="case-actions"><button class="btn-gold btn-sm" onclick="acceptCase(this,'Custody')"><span>Accept</span></button><button class="btn-red btn-sm" onclick="rejectCase(this)">Reject</button></div></div>
+          <div class="case-item"><div><div class="case-title">Maintenance Order Appeal</div><div class="case-meta">Client: Sunita G. · 2 hrs ago</div></div><div class="case-actions"><button class="btn-gold btn-sm" onclick="acceptCase(this,'Maintenance')"><span>Accept</span></button><button class="btn-red btn-sm" onclick="rejectCase(this)">Reject</button></div></div>
+        </div>
+      </div>
+      <div id="ls-earnings" style="display:none;">
+        <div class="dash-header"><h1>Earnings</h1></div>
+        <div class="stats-row" style="grid-template-columns:repeat(3,1fr);">
+          <div class="stat-card"><div class="stat-val">Rs 24,500</div><div class="stat-label">This Month</div></div>
+          <div class="stat-card"><div class="stat-val">Rs 1.82L</div><div class="stat-label">Total Earned</div></div>
+          <div class="stat-card"><div class="stat-val">Rs 8,200</div><div class="stat-label">Pending Payout</div></div>
+        </div>
+        <div class="section-card">
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Client</th><th>Service</th><th>Gross</th><th>Commission (15%)</th><th>Net</th></tr></thead>
+            <tbody>
+              <tr><td>14 Nov</td><td id="earningsClient1">Client</td><td>Video 1hr</td><td>Rs 1,500</td><td>Rs 225</td><td style="color:var(--green)">Rs 1,275</td></tr>
+              <tr><td>12 Nov</td><td>Meera S.</td><td>Video 2hr</td><td>Rs 3,000</td><td>Rs 450</td><td style="color:var(--green)">Rs 2,550</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn-outline" onclick="toast('Bank transfer initiated for Rs 8,200')">Request Payout</button>
+      </div>
+      <div id="ls-schedule" style="display:none;">
+        <div class="dash-header"><h1>Schedule</h1></div>
+        <div class="section-card">
+          <div class="section-card-header"><span class="section-card-title">This Week</span><button class="btn-outline btn-sm" onclick="toast('Availability settings opened')">Set Availability</button></div>
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Time</th><th>Client</th><th>Type</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>Tomorrow</td><td>3:00 PM</td><td id="scheduleClient1">Client</td><td>Video</td><td><button class="btn-outline btn-sm" onclick="showPage('videoCall')">Join</button></td></tr>
+              <tr><td>Friday</td><td>11:00 AM</td><td>Meera Singh</td><td>Chat</td><td><button class="btn-outline btn-sm" onclick="showPage('chat')">Open</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="ls-profile" style="display:none;">
+        <div class="dash-header"><h1>Edit Profile</h1></div>
+        <div style="max-width:700px;"><div class="section-card">
+          <div class="form-grid">
+            <div class="form-group"><label>Full Name</label><input type="text" id="lawyerNameInput"/></div>
+            <div class="form-group"><label>Specialization</label><input type="text" placeholder="e.g. Family Law"/></div>
+            <div class="form-group"><label>Consultation Fee (Rs/hr)</label><input type="number" value="1500"/></div>
+            <div class="form-group"><label>City</label><input type="text" placeholder="Your city"/></div>
+            <div class="form-group span2"><label>Bio</label><textarea rows="4" placeholder="Describe your experience..."></textarea></div>
+          </div>
+          <button class="btn-gold btn-sm" onclick="toast('Profile updated')"><span>Save Profile</span></button>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: CASE TRACKER ══ -->
+<div class="page" id="page-caseTracker">
+  <div class="dash-layout">
+    <aside class="sidebar">
+      <div style="padding:1.2rem 1.5rem;"><button class="btn-outline btn-sm" onclick="showPage('clientDash')">Back to Dashboard</button></div>
+      <ul class="sidebar-nav">
+        <li><a class="active">Case Tracker</a></li>
+        <li><a onclick="showPage('chat')">Chat with Lawyer</a></li>
+        <li><a onclick="setClientSection('documents');showPage('clientDash')">Documents</a></li>
+      </ul>
+    </aside>
+    <div class="dash-main">
+      <div class="dash-header"><h1>Case Tracker</h1><p>Property Dispute — Lucknow · Adv. Rajiv Verma</p></div>
+      <div class="section-card">
+        <div class="section-card-header"><span class="section-card-title">Case Timeline</span><span class="case-status s-accepted">Active</span></div>
+        <div class="timeline-wrap">
+          <div class="ts"><div class="ts-dot done"></div><div><div class="ts-title">Case Submitted</div><div class="ts-date">12 Nov 2024</div><div class="ts-desc">Case submitted with all documents. Waiting for lawyer acceptance.</div></div></div>
+          <div class="ts"><div class="ts-dot done"></div><div><div class="ts-title">Case Accepted</div><div class="ts-date">12 Nov 2024</div><div class="ts-desc">Adv. Rajiv Verma accepted your case within 45 minutes.</div></div></div>
+          <div class="ts"><div class="ts-dot active"></div><div><div class="ts-title">In Consultation</div><div class="ts-date">Ongoing</div><div class="ts-desc">Initial consultations in progress. Court notice sent to opposing party.</div></div></div>
+          <div class="ts"><div class="ts-dot pend"></div><div><div class="ts-title">Hearing</div><div class="ts-date">Scheduled — 20 Dec 2024</div><div class="ts-desc">First hearing at District Court, Lucknow.</div></div></div>
+          <div class="ts"><div class="ts-dot pend"></div><div><div class="ts-title">Verdict</div><div class="ts-date">Pending</div><div class="ts-desc">Awaiting hearing and verdict.</div></div></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">
+        <button class="btn-outline" onclick="showPage('chat')">Chat with Lawyer</button>
+        <button class="btn-outline" onclick="showPage('videoCall')">Video Consultation</button>
+        <button class="btn-outline" onclick="openModal('refundModal')">Request Refund</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: CHAT ══ -->
+<div class="page" id="page-chat">
+  <div style="margin-top:60px;">
+    <div class="chat-layout">
+      <div class="chat-list-panel">
+        <div class="chat-list-title">Messages</div>
+        <div class="chat-item active" onclick="setChat('Adv. Priya Sharma','PS',this)">
+          <div class="ci-av">PS</div>
+          <div style="flex:1;min-width:0;"><div class="ci-name">Adv. Priya Sharma</div><div class="ci-preview">Regarding the documents...</div></div>
+          <div class="ci-time">Now</div>
+        </div>
+        <div class="chat-item" onclick="setChat('Adv. Rajiv Verma','RV',this)" style="--av-bg:linear-gradient(135deg,#8a6020,#c9a84c)">
+          <div class="ci-av" style="background:linear-gradient(135deg,#8a6020,#c9a84c)">RV</div>
+          <div style="flex:1;min-width:0;"><div class="ci-name">Adv. Rajiv Verma</div><div class="ci-preview">Court date confirmed for...</div></div>
+          <div class="ci-unread">2</div>
+        </div>
+        <div class="chat-item" onclick="setChat('Adv. Neha Kapoor','NK',this)">
+          <div class="ci-av" style="background:linear-gradient(135deg,#1a2a1a,#2a5c2a)">NK</div>
+          <div style="flex:1;min-width:0;"><div class="ci-name">Adv. Neha Kapoor</div><div class="ci-preview">Please review the contract</div></div>
+          <div class="ci-time">2d</div>
+        </div>
+        <div style="padding:1rem;border-top:1px solid rgba(200,168,75,0.08);margin-top:auto;">
+          <button class="btn-outline" style="width:100%;font-size:0.68rem;" onclick="showPage('clientDash')">Back to Dashboard</button>
+        </div>
+      </div>
+      <div class="chat-window">
+        <div class="chat-topbar">
+          <div class="chat-topbar-av" id="chatAv">PS</div>
+          <div><div class="chat-topbar-name" id="chatName">Adv. Priya Sharma</div><div class="chat-topbar-status">Online</div></div>
+          <div class="chat-topbar-actions">
+            <button class="btn-outline btn-sm" onclick="showPage('videoCall')">Video</button>
+            <button class="btn-outline btn-sm" onclick="toast('Voice call initiated')">Call</button>
+            <button class="btn-outline btn-sm" onclick="toast('File shared')">File</button>
+          </div>
+        </div>
+        <!-- Free chat timer -->
+        <div class="chat-timer-bar" id="chatTimerBar">
+          Free chat: <span class="free-timer" id="freeTimerDisplay">10:00</span> remaining — <span style="color:var(--muted2);">Chat is free for the first 10 minutes</span>
+        </div>
+        <div class="chat-msgs" id="chatMessages">
+          <div class="msg recv"><div class="msg-bubble">Hello! I've reviewed the property documents you shared. There are a few things we need to discuss regarding the land title.</div><div class="msg-time">10:32 AM</div></div>
+          <div class="msg sent"><div class="msg-bubble">Thank you for reviewing them. What issues did you find?</div><div class="msg-time">10:35 AM</div></div>
+          <div class="msg recv"><div class="msg-bubble">The seller's title deed has a discrepancy in the survey number. We should file a rectification petition before proceeding.</div><div class="msg-time">10:37 AM</div></div>
+          <div class="msg sent"><div class="msg-bubble">That's concerning. What are our options and the likely timeline?</div><div class="msg-time">10:40 AM</div></div>
+          <div class="msg recv"><div class="msg-bubble">We have two options: (1) Request the seller to get the title rectified — takes 2–3 months. (2) File an indemnity agreement and proceed with caution. I recommend option 1.</div><div class="msg-time">10:42 AM</div></div>
+        </div>
+        <div id="upgradeBar" style="display:none;"><div class="upgrade-prompt"><p>Free 10-minute chat session has ended. Upgrade to continue this consultation.</p><button class="btn-gold btn-sm" onclick="openModal('paymentModal');closeUpgrade()"><span>Continue — Paid Chat</span></button></div></div>
+        <div class="chat-input-row" id="chatInputRow">
+          <input class="chat-input" type="text" id="chatInput" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendMessage()"/>
+          <button class="chat-send-btn" onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: VIDEO CALL ══ -->
+<div class="page" id="page-videoCall">
+  <div class="video-page">
+    <div style="text-align:center;margin-bottom:1.2rem;">
+      <div style="font-size:0.67rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);">Consultation with Adv. Priya Sharma</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.25rem;">Secure &amp; Encrypted</div>
+    </div>
+    <div class="video-grid">
+      <div class="video-main">
+        <div style="font-size:3rem;opacity:0.25;">&#128100;</div>
+        <div class="video-live">LIVE</div>
+        <div class="video-label">Adv. Priya Sharma</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.8rem;">
+        <div class="video-self">
+          <div style="font-size:2rem;opacity:0.25;">&#128578;</div>
+          <div class="video-label">You</div>
+        </div>
+        <div style="background:var(--black3);border:1px solid rgba(200,168,75,0.08);padding:1.1rem;">
+          <div style="font-size:0.62rem;color:var(--gold);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;">Notes</div>
+          <textarea style="width:100%;background:var(--black4);border:1px solid rgba(200,168,75,0.12);color:var(--white);font-family:'Outfit',sans-serif;font-size:0.75rem;padding:0.6rem;outline:none;resize:none;height:90px;" placeholder="Type notes here..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="vc-controls">
+      <button class="vc-btn" onclick="toggleBtn(this,'M','Mute')" title="Mute">M</button>
+      <button class="vc-btn" onclick="toggleBtn(this,'V','Cam Off')" title="Camera">V</button>
+      <button class="vc-btn" onclick="toast('Screen share started')" title="Share Screen">SS</button>
+      <div class="video-timer" id="videoTimer">00:00</div>
+      <button class="vc-btn" onclick="toast('Chat opened')" title="Chat">C</button>
+      <button class="vc-btn vc-end" onclick="endCall()" title="End Call">End</button>
+    </div>
+    <div style="display:flex;gap:0.8rem;margin-top:1.2rem;flex-wrap:wrap;justify-content:center;">
+      <button class="btn-outline" onclick="openModal('paymentModal')">Extend Consultation</button>
+      <button class="btn-outline" onclick="openModal('reviewModal')">Rate After Call</button>
+      <button class="btn-outline" onclick="showPage('clientDash')">Back to Dashboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: NOTIFICATIONS ══ -->
+<div class="page" id="page-notifications">
+  <div class="dash-layout">
+    <aside class="sidebar">
+      <div style="padding:1.2rem 1.5rem;"><button class="btn-outline btn-sm" onclick="showPage('clientDash')">Back</button></div>
+      <ul class="sidebar-nav">
+        <li><a class="active">All Notifications</a></li>
+        <li><a onclick="toast('Filtered by case updates')">Case Updates</a></li>
+        <li><a onclick="toast('Filtered by messages')">Messages</a></li>
+        <li><a onclick="toast('Filtered by payments')">Payments</a></li>
+      </ul>
+    </aside>
+    <div class="dash-main">
+      <div class="dash-header"><h1>Notifications</h1></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+        <span style="font-size:0.8rem;color:var(--muted);">3 unread</span>
+        <button class="btn-outline btn-sm" onclick="markAllRead()">Mark all read</button>
+      </div>
+      <div id="notifList">
+        <div class="notif-item unread"><div style="font-size:1.1rem;flex-shrink:0;">&#10003;</div><div><div class="notif-text">Adv. Rajiv Verma accepted your Property Dispute case.</div><div class="notif-sub">Case is now active · 30 min ago</div></div><div class="notif-time">30m</div></div>
+        <div class="notif-item unread"><div style="font-size:1.1rem;flex-shrink:0;">&#128249;</div><div><div class="notif-text">Video consultation with Adv. Priya Sharma is scheduled for tomorrow at 3:00 PM.</div><div class="notif-sub">Consultation reminder · 2 hr ago</div></div><div class="notif-time">2h</div></div>
+        <div class="notif-item unread"><div style="font-size:1.1rem;flex-shrink:0;">&#9745;</div><div><div class="notif-text">Payment of Rs 1,649 confirmed for video consultation on 12 Nov.</div><div class="notif-sub">Yesterday</div></div><div class="notif-time">1d</div></div>
+        <div class="notif-item"><div style="font-size:1.1rem;flex-shrink:0;">&#9993;</div><div><div class="notif-text">New message from Adv. Priya Sharma regarding your case documents.</div><div class="notif-sub">2 days ago</div></div><div class="notif-time">2d</div></div>
+        <div class="notif-item"><div style="font-size:1.1rem;flex-shrink:0;">&#9733;</div><div class="notif-text">Rate your consultation with Adv. Neha Kapoor.</div><button class="btn-outline btn-sm" style="margin-left:auto;flex-shrink:0;" onclick="openModal('reviewModal')">Rate Now</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: EMERGENCY ══ -->
+<div class="page" id="page-emergency">
+  <div class="emergency-page">
+    <div class="emg-ring">!</div>
+    <div class="eyebrow center">Emergency Legal Help</div>
+    <h2 class="sec-title" style="margin-bottom:0.8rem;">Instant <em>Legal Connection</em></h2>
+    <p style="color:var(--muted2);max-width:480px;margin-bottom:2rem;font-size:0.92rem;line-height:1.8;">Connect with an available lawyer within 2 minutes for urgent matters — arrest, police notice, domestic violence, or court injunctions.</p>
+    <button class="btn-red" style="padding:1.1rem 3rem;font-size:0.85rem;letter-spacing:0.1em;margin-bottom:1.2rem;" onclick="triggerEmergency()">Connect to Lawyer Now</button>
+    <p style="font-size:0.75rem;color:var(--muted);margin-bottom:2.5rem;">Average response: <strong style="color:var(--gold);">90 seconds</strong></p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;max-width:700px;width:100%;margin-bottom:2.5rem;">
+      <div style="background:var(--black3);border:1px solid rgba(217,79,79,0.18);padding:1.5rem;text-align:center;"><div style="font-size:1.8rem;margin-bottom:0.7rem;">&#127980;</div><div style="font-size:0.84rem;font-weight:600;margin-bottom:0.2rem;">Arrest &amp; FIR</div><div style="font-size:0.72rem;color:var(--muted);">Bail, detention</div></div>
+      <div style="background:var(--black3);border:1px solid rgba(217,79,79,0.18);padding:1.5rem;text-align:center;"><div style="font-size:1.8rem;margin-bottom:0.7rem;">&#127968;</div><div style="font-size:0.84rem;font-weight:600;margin-bottom:0.2rem;">Domestic Violence</div><div style="font-size:0.72rem;color:var(--muted);">Protection orders</div></div>
+      <div style="background:var(--black3);border:1px solid rgba(217,79,79,0.18);padding:1.5rem;text-align:center;"><div style="font-size:1.8rem;margin-bottom:0.7rem;">&#9878;&#65039;</div><div style="font-size:0.84rem;font-weight:600;margin-bottom:0.2rem;">Injunctions</div><div style="font-size:0.72rem;color:var(--muted);">Stay orders, urgent filings</div></div>
+    </div>
+    <div style="display:flex;gap:0.8rem;flex-wrap:wrap;justify-content:center;">
+      <button class="btn-ghost" onclick="showPage('landing')">Back to Home</button>
+      <button class="btn-outline" onclick="showPage('findLawyer')">Browse All Lawyers</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: LAWYER VERIFICATION ══ -->
+<div class="page" id="page-lawyerVerification">
+  <div class="dash-layout">
+    <aside class="sidebar">
+      <div style="padding:1.2rem 1.5rem;"><button class="btn-outline btn-sm" onclick="showPage('lawyerDash')">Back</button></div>
+      <ul class="sidebar-nav">
+        <li><a class="active">Verification</a></li>
+        <li><a onclick="toast('Document upload opened')">Upload Documents</a></li>
+      </ul>
+    </aside>
+    <div class="dash-main">
+      <div class="dash-header"><h1>Verification</h1><p>Complete all steps to get your Verified badge</p></div>
+      <div style="max-width:600px;">
+        <div class="verif-step"><div style="font-size:1.3rem;flex-shrink:0;">&#128100;</div><div><div style="font-size:0.85rem;font-weight:600;">Government ID</div><div style="font-size:0.72rem;color:var(--muted);">Aadhaar or Passport</div></div><span class="vs-done">Verified</span></div>
+        <div class="verif-step"><div style="font-size:1.3rem;flex-shrink:0;">&#9878;&#65039;</div><div><div style="font-size:0.85rem;font-weight:600;">Bar Council Certificate</div><div style="font-size:0.72rem;color:var(--muted);">State/National Bar Council registration</div></div><span class="vs-done">Verified</span></div>
+        <div class="verif-step"><div style="font-size:1.3rem;flex-shrink:0;">&#127891;</div><div><div style="font-size:0.85rem;font-weight:600;">Law Degree</div><div style="font-size:0.72rem;color:var(--muted);">LLB / LLM certificate</div></div><span class="vs-pending">Pending Review</span></div>
+        <div class="verif-step"><div style="font-size:1.3rem;flex-shrink:0;">&#128196;</div><div><div style="font-size:0.85rem;font-weight:600;">Practice Certificate</div><div style="font-size:0.72rem;color:var(--muted);">Court enrollment certificate</div></div><span class="vs-rejected">Rejected — Reupload</span></div>
+        <div style="margin-top:1.2rem;display:flex;gap:0.8rem;flex-wrap:wrap;">
+          <button class="btn-gold btn-sm" onclick="toast('Document upload opened')"><span>Upload Documents</span></button>
+          <button class="btn-outline btn-sm" onclick="toast('Support ticket raised')">Contact Support</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: ADMIN ══ -->
+<div class="page" id="page-adminPanel">
+  <div class="dash-layout">
+    <aside class="sidebar">
+      <div class="sidebar-user">
+        <div class="sidebar-av" style="background:linear-gradient(135deg,#c94444,#7a1010)">AD</div>
+        <div class="sidebar-name">Admin Panel</div>
+        <div class="sidebar-role" style="color:var(--red);">Super Admin</div>
+      </div>
+      <ul class="sidebar-nav">
+        <li><a class="active" onclick="setAdminSection('overview')">Overview</a></li>
+        <li><a onclick="setAdminSection('users')">Manage Users</a></li>
+        <li><a onclick="setAdminSection('lawyers')">Approve Lawyers</a></li>
+        <li><a onclick="setAdminSection('cases')">Monitor Cases</a></li>
+        <li><a onclick="setAdminSection('payments')">Payments</a></li>
+        <li><a onclick="setAdminSection('disputes')">Disputes &amp; Refunds</a></li>
+        <li><button onclick="handleLogout()">Logout</button></li>
+      </ul>
+    </aside>
+    <div class="dash-main">
+      <div id="ad-overview">
+        <div class="dash-header"><h1>Admin Dashboard</h1></div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-val">18,420</div><div class="stat-label">Total Users</div></div>
+          <div class="stat-card"><div class="stat-val">1,248</div><div class="stat-label">Active Lawyers</div></div>
+          <div class="stat-card"><div class="stat-val">4,312</div><div class="stat-label">Active Cases</div></div>
+          <div class="stat-card"><div class="stat-val">Rs 18.4L</div><div class="stat-label">Monthly Revenue</div></div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-header"><span class="section-card-title">Pending Actions</span></div>
+          <table class="data-table">
+            <thead><tr><th>Type</th><th>Count</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>Lawyer Approvals</td><td style="color:var(--gold)">12</td><td><button class="btn-outline btn-sm" onclick="setAdminSection('lawyers')">Review</button></td></tr>
+              <tr><td>Refund Requests</td><td style="color:var(--gold)">5</td><td><button class="btn-outline btn-sm" onclick="setAdminSection('disputes')">Review</button></td></tr>
+              <tr><td>Dispute Cases</td><td style="color:var(--red)">3</td><td><button class="btn-outline btn-sm" onclick="setAdminSection('disputes')">Resolve</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="ad-lawyers" style="display:none;">
+        <div class="dash-header"><h1>Approve Lawyers</h1></div>
+        <div class="case-list">
+          <div class="case-item"><div><div class="case-title">Adv. Aryan Kapoor · Criminal Defense</div><div class="case-meta">Documents: ID OK, Bar OK, Degree missing</div></div><div class="case-actions"><button class="btn-gold btn-sm" onclick="approveAction(this,'Aryan Kapoor')"><span>Approve</span></button><button class="btn-red btn-sm" onclick="rejectAction(this)">Reject</button></div></div>
+          <div class="case-item"><div><div class="case-title">Adv. Sunita Yadav · Family Law</div><div class="case-meta">All documents verified</div></div><div class="case-actions"><button class="btn-gold btn-sm" onclick="approveAction(this,'Sunita Yadav')"><span>Approve</span></button><button class="btn-red btn-sm" onclick="rejectAction(this)">Reject</button></div></div>
+        </div>
+      </div>
+      <div id="ad-users" style="display:none;">
+        <div class="dash-header"><h1>Manage Users</h1></div>
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Role</th><th>Joined</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>Arjun Mehta</td><td>Client</td><td>Jan 2024</td><td style="color:var(--green)">Active</td><td><button class="btn-outline btn-sm" onclick="toast('User profile loaded')">View</button></td></tr>
+            <tr><td>Adv. Priya Sharma</td><td>Lawyer</td><td>Feb 2023</td><td style="color:var(--green)">Verified</td><td><button class="btn-outline btn-sm" onclick="toast('Lawyer profile loaded')">View</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="ad-cases" style="display:none;">
+        <div class="dash-header"><h1>Monitor Cases</h1></div>
+        <table class="data-table">
+          <thead><tr><th>Case ID</th><th>Client</th><th>Lawyer</th><th>Category</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>#LX2401</td><td>Arjun Mehta</td><td>Adv. Rajiv Verma</td><td>Property</td><td><span class="case-status s-accepted">Active</span></td><td><button class="btn-outline btn-sm" onclick="toast('Case details loaded')">View</button></td></tr>
+            <tr><td>#LX2398</td><td>Aisha Siddiqui</td><td>Adv. Priya Sharma</td><td>Family</td><td><span class="case-status s-consult">Consultation</span></td><td><button class="btn-outline btn-sm" onclick="toast('Case details loaded')">View</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="ad-payments" style="display:none;">
+        <div class="dash-header"><h1>Payments</h1></div>
+        <div class="stats-row" style="grid-template-columns:repeat(3,1fr);">
+          <div class="stat-card"><div class="stat-val">Rs 18.4L</div><div class="stat-label">Monthly Volume</div></div>
+          <div class="stat-card"><div class="stat-val">Rs 2.76L</div><div class="stat-label">Commission</div></div>
+          <div class="stat-card"><div class="stat-val">Rs 24,200</div><div class="stat-label">Refunds Issued</div></div>
+        </div>
+      </div>
+      <div id="ad-disputes" style="display:none;">
+        <div class="dash-header"><h1>Disputes &amp; Refunds</h1></div>
+        <div class="case-list">
+          <div class="case-item"><div><div class="case-title">Refund Request — Arjun Mehta</div><div class="case-meta">Rs 2,049 · Lawyer did not respond · 2 days ago</div></div><div class="case-actions"><button class="btn-gold btn-sm" onclick="toast('Refund approved and processed')"><span>Approve</span></button><button class="btn-red btn-sm" onclick="toast('Refund rejected')">Reject</button></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════
+//  THREE.JS 3D BACKGROUND
+// ════════════════════════════════════
+(function initThree() {
+  const canvas = document.getElementById('threeCanvas');
+  if (!canvas || typeof THREE === 'undefined') return;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x06080f, 1);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 200);
+  camera.position.set(0, 0, 30);
+
+  // Fog for depth
+  scene.fog = new THREE.FogExp2(0x06080f, 0.035);
+
+  // Floating geometric mesh — icosahedra
+  const geos = [];
+  const goldColor = new THREE.Color(0xc8a84b);
+  const blueColor = new THREE.Color(0x1a3060);
+
+  for (let i = 0; i < 60; i++) {
+    const size = 0.3 + Math.random() * 1.2;
+    const geo = new THREE.IcosahedronGeometry(size, 0);
+    const wireframe = Math.random() > 0.4;
+    const mat = wireframe
+      ? new THREE.MeshBasicMaterial({ color: goldColor.clone().multiplyScalar(0.3 + Math.random() * 0.4), wireframe: true, transparent: true, opacity: 0.25 + Math.random() * 0.35 })
+      : new THREE.MeshStandardMaterial({ color: blueColor.clone(), metalness: 0.8, roughness: 0.2, transparent: true, opacity: 0.15 + Math.random() * 0.2 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set((Math.random() - 0.5) * 50, (Math.random() - 0.5) * 35, (Math.random() - 0.5) * 20 - 5);
+    mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+    const speed = { rot: (Math.random() - 0.5) * 0.006, float: Math.random() * 0.003 + 0.001, phase: Math.random() * Math.PI * 2 };
+    mesh.userData = speed;
+    scene.add(mesh);
+    geos.push(mesh);
+  }
+
+  // Large scale structures — octahedra in background
+  for (let i = 0; i < 8; i++) {
+    const geo = new THREE.OctahedronGeometry(3 + Math.random() * 4, 0);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x1a3060, wireframe: true, transparent: true, opacity: 0.08 + Math.random() * 0.1 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set((Math.random() - 0.5) * 60, (Math.random() - 0.5) * 40, -10 - Math.random() * 10);
+    mesh.userData = { rot: (Math.random() - 0.5) * 0.003, float: 0.0008, phase: Math.random() * Math.PI * 2 };
+    scene.add(mesh);
+    geos.push(mesh);
+  }
+
+  // Particle stars
+  const partCount = 300;
+  const partGeo = new THREE.BufferGeometry();
+  const positions = new Float32Array(partCount * 3);
+  for (let i = 0; i < partCount * 3; i++) positions[i] = (Math.random() - 0.5) * 80;
+  partGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const partMat = new THREE.PointsMaterial({ color: 0xc8a84b, size: 0.06, transparent: true, opacity: 0.5 });
+  scene.add(new THREE.Points(partGeo, partMat));
+
+  // Ambient + directional light
+  scene.add(new THREE.AmbientLight(0x1a2040, 1.5));
+  const dLight = new THREE.DirectionalLight(0xc8a84b, 0.6);
+  dLight.position.set(10, 10, 10);
+  scene.add(dLight);
+
+  let mouse = { x: 0, y: 0 };
+  document.addEventListener('mousemove', e => {
+    mouse.x = (e.clientX / window.innerWidth - 0.5) * 2;
+    mouse.y = -(e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  function resize() {
+    const hero = document.querySelector('.hero');
+    if (!hero) return;
+    const W = hero.clientWidth, H = hero.clientHeight;
+    renderer.setSize(W, H);
+    camera.aspect = W / H;
+    camera.updateProjectionMatrix();
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+
+  let t = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    t += 0.01;
+
+    // Parallax camera drift
+    camera.position.x += (mouse.x * 3 - camera.position.x) * 0.02;
+    camera.position.y += (mouse.y * 2 - camera.position.y) * 0.02;
+    camera.lookAt(0, 0, 0);
+
+    geos.forEach(m => {
+      m.rotation.y += m.userData.rot;
+      m.rotation.x += m.userData.rot * 0.6;
+      m.position.y += Math.sin(t * m.userData.float * 60 + m.userData.phase) * 0.008;
+    });
+
+    renderer.render(scene, camera);
+  }
+  animate();
+})();
+
+// ════════════════════════════════════
+//  STATE
+// ════════════════════════════════════
+let currentUser = null, currentRole = 'client', signupRole = 'client';
+let videoInterval = null, videoSeconds = 0;
+let freeTimerInterval = null, freeTimerSeconds = 600; // 10 min
+let pracPaused = false, lawPaused = false;
+
+const lawyerData = [
+  {name:'Adv. Priya Sharma',initials:'PS',spec:'Family Law',city:'Delhi',fee:1500,exp:'12yr',rating:4.9,reviews:128,tags:['Divorce','Custody','Hindi/English'],grad:'linear-gradient(135deg,#c8a84b,#7a5c20)'},
+  {name:'Adv. Rajiv Verma',initials:'RV',spec:'Criminal Defense',city:'Lucknow',fee:1200,exp:'18yr',rating:5.0,reviews:214,tags:['Bail','Trial','FIR'],grad:'linear-gradient(135deg,#8a6020,#c9a84c)'},
+  {name:'Adv. Neha Kapoor',initials:'NK',spec:'Corporate Law',city:'Mumbai',fee:2000,exp:'8yr',rating:4.4,reviews:97,tags:['Startups','Contracts','Compliance'],grad:'linear-gradient(135deg,#1a2a1a,#2a5c2a)'},
+  {name:'Adv. Suresh Nair',initials:'SN',spec:'Property Disputes',city:'Bangalore',fee:1000,exp:'15yr',rating:4.7,reviews:183,tags:['Land','RERA','Title'],grad:'linear-gradient(135deg,#2a1a2a,#5c205c)'},
+  {name:'Adv. Kavita Singh',initials:'KS',spec:'Consumer Rights',city:'Chennai',fee:800,exp:'6yr',rating:4.5,reviews:62,tags:['Consumer','Forum','Refunds'],grad:'linear-gradient(135deg,#1a2a2a,#205c5c)'},
+  {name:'Adv. Manish Tiwari',initials:'MT',spec:'Labour and Employment',city:'Lucknow',fee:900,exp:'10yr',rating:4.6,reviews:114,tags:['Employment','PF/ESI'],grad:'linear-gradient(135deg,#2a2a1a,#5c4a20)'},
+];
+
+// ════════════════════════════════════
+//  PAGE NAVIGATION
+// ════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById('page-' + id);
+  if (pg) { pg.classList.add('active'); window.scrollTo(0, 0); }
+  if (id === 'findLawyer') renderLawyerGrid();
+  if (id === 'videoCall') startVideoTimer(); else stopVideoTimer();
+  if (id === 'clientDash') updateClientDashUI();
+  if (id === 'lawyerDash') updateLawyerDashUI();
+  if (id === 'chat') startFreeTimer(); else stopFreeTimer();
+  updateNav();
+}
+
+function scrollToSection(id) {
+  showPage('landing');
+  setTimeout(() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 80);
+}
+
+// ════════════════════════════════════
+//  NAVBAR
+// ════════════════════════════════════
+function updateNav() {
+  const nr = document.getElementById('navRight');
+  if (currentUser) {
+    const dashPage = currentRole === 'lawyer' ? 'lawyerDash' : currentRole === 'admin' ? 'adminPanel' : 'clientDash';
+    const initials = currentUser.charAt(0).toUpperCase();
+    nr.innerHTML = `<div class="nav-user-info"><div class="nav-av">${initials}</div><span>${currentUser}</span></div><button class="nav-btn" onclick="showPage('${dashPage}')">Dashboard</button><button class="nav-btn" onclick="handleLogout()">Logout</button>`;
+  } else {
+    nr.innerHTML = `<button class="nav-btn" onclick="openModal('loginModal')">Sign In</button><button class="nav-btn filled" onclick="openModal('signupModal')">Get Started</button>`;
+  }
+}
+
+function toggleMenu() {
+  document.getElementById('mobileMenu').classList.toggle('open');
+}
+
+// Close mobile menu on outside click
+document.addEventListener('click', e => {
+  const menu = document.getElementById('mobileMenu');
+  const ham = document.getElementById('hamburger');
+  if (menu.classList.contains('open') && !menu.contains(e.target) && !ham.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+
+// ════════════════════════════════════
+//  MODALS
+// ════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function switchModal(a, b) { closeModal(a); openModal(b); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+});
+
+function setRole(btn, role) {
+  btn.closest('.role-toggle').querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentRole = role;
+}
+
+function setSignupRole(role) {
+  signupRole = role;
+  document.getElementById('srClient').classList.toggle('active', role === 'client');
+  document.getElementById('srLawyer').classList.toggle('active', role === 'lawyer');
+  document.getElementById('lawyerSpecField').style.display = role === 'lawyer' ? 'block' : 'none';
+}
+
+function selectPM(btn) {
+  btn.closest('div').querySelectorAll('.btn-outline').forEach(b => b.style.background = '');
+  btn.style.background = 'var(--gold-dim)';
+}
+
+// ════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════
+function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  if (!email || !pass) { toast('Please fill in all fields'); return; }
+  currentUser = email.split('@')[0];
+  closeModal('loginModal');
+  toast('Welcome back, ' + currentUser);
+  updateNav();
+  if (currentRole === 'lawyer') showPage('lawyerDash');
+  else if (currentRole === 'admin') showPage('adminPanel');
+  else showPage('clientDash');
+}
+
+function handleSignup() {
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pass = document.getElementById('signupPass').value;
+  if (!name || !email || !pass) { toast('Please fill in all fields'); return; }
+  currentUser = name.split(' ')[0];
+  currentRole = signupRole;
+  closeModal('signupModal');
+  toast('Account created. Welcome, ' + currentUser);
+  updateNav();
+  if (currentRole === 'lawyer') showPage('lawyerDash');
+  else showPage('clientDash');
+}
+
+function handleLogout() {
+  currentUser = null; currentRole = 'client';
+  toast('Logged out successfully');
+  showPage('landing');
+}
+
+// ════════════════════════════════════
+//  DYNAMIC USER NAMES IN DASHBOARDS
+// ════════════════════════════════════
+function updateClientDashUI() {
+  const name = currentUser || 'Guest';
+  const initials = name.charAt(0).toUpperCase();
+  const el = (id) => document.getElementById(id);
+  if (el('clientSidebarName')) el('clientSidebarName').textContent = currentUser || 'Your Account';
+  if (el('clientSidebarAv')) el('clientSidebarAv').textContent = initials;
+  if (el('clientGreeting')) el('clientGreeting').textContent = 'Good morning, ' + name;
+  if (el('profileAv')) el('profileAv').textContent = initials;
+  if (el('profileName')) el('profileName').textContent = currentUser || 'Your Name';
+  if (el('profileNameInput')) el('profileNameInput').value = currentUser || '';
+}
+
+function updateLawyerDashUI() {
+  const name = currentUser || 'Lawyer';
+  const initials = name.charAt(0).toUpperCase();
+  const el = (id) => document.getElementById(id);
+  if (el('lawyerSidebarName')) el('lawyerSidebarName').textContent = name;
+  if (el('lawyerSidebarAv')) el('lawyerSidebarAv').textContent = initials;
+  if (el('lawyerGreeting')) el('lawyerGreeting').textContent = 'Welcome, ' + name;
+  if (el('lawyerNameInput')) el('lawyerNameInput').value = name;
+}
+
+// ════════════════════════════════════
+//  CASE ACTIONS
+// ════════════════════════════════════
+function updateCharCount() {
+  const text = document.getElementById('caseDesc').value;
+  const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  document.getElementById('wordCount').textContent = words;
+}
+
+function submitCase() {
+  const cat = document.getElementById('caseCategory').value;
+  const desc = document.getElementById('caseDesc').value.trim();
+  if (!cat || !desc) { toast('Please select a category and describe your case'); return; }
+  closeModal('caseModal');
+  toast('Case submitted. Waiting for lawyer acceptance.');
+}
+
+function openBookModal(lawyerName) {
+  document.getElementById('bookWith').textContent = 'with ' + lawyerName;
+  openModal('bookModal');
+}
+
+function confirmBooking() {
+  closeModal('bookModal');
+  toast('Consultation booked. Check your dashboard for details.');
+  openModal('paymentModal');
+}
+
+function processPayment() {
+  closeModal('paymentModal');
+  toast('Payment confirmed.');
+}
+
+function submitRefund() { closeModal('refundModal'); toast('Refund request submitted.'); }
+function submitReview() { closeModal('reviewModal'); toast('Review submitted. Thank you.'); }
+function setRating(n) {
+  document.querySelectorAll('#starRating span').forEach((s, i) => {
+    s.style.color = i < n ? 'var(--gold)' : 'var(--muted)';
+  });
+}
+function acceptCase(btn, title) {
+  btn.closest('.case-actions').innerHTML = '<span style="color:var(--green);font-size:0.78rem;">Accepted</span>';
+  toast('Case "' + title + '" accepted.');
+}
+function rejectCase(btn) { btn.closest('.case-item').style.opacity = '0.4'; toast('Case rejected.'); }
+function approveAction(btn, name) {
+  btn.closest('.case-actions').innerHTML = '<span style="color:var(--green);font-size:0.78rem;">Approved</span>';
+  toast(name + ' approved and verified.');
+}
+function rejectAction(btn) { btn.closest('.case-item').style.opacity = '0.4'; toast('Lawyer rejected.'); }
+
+// ════════════════════════════════════
+//  LAWYER GRID
+// ════════════════════════════════════
+function renderLawyerGrid(filter = {}) {
+  const grid = document.getElementById('lawyerGrid');
+  if (!grid) return;
+  let list = [...lawyerData];
+  if (filter.spec) list = list.filter(l => l.spec.toLowerCase().includes(filter.spec.toLowerCase()));
+  if (filter.city) list = list.filter(l => l.city === filter.city);
+  if (filter.query) list = list.filter(l => l.name.toLowerCase().includes(filter.query) || l.spec.toLowerCase().includes(filter.query));
+  if (!list.length) { grid.innerHTML = '<div style="color:var(--muted);padding:2rem;grid-column:span 2;">No lawyers found matching your search.</div>'; return; }
+  grid.innerHTML = list.map(l => `
+    <div class="l-card">
+      <div class="l-top"><div class="l-av" style="background:${l.grad}">${l.initials}</div><div><div class="l-name">${l.name}</div><div class="l-spec">${l.spec}</div></div></div>
+      <div class="l-stars">${'&#9733;'.repeat(Math.round(l.rating))}${'&#9734;'.repeat(5-Math.round(l.rating))} <span>(${l.reviews})</span></div>
+      <div style="font-size:0.75rem;color:var(--muted);margin:0.45rem 0;">${l.city} · ${l.exp} experience · Rs ${l.fee}/hr</div>
+      <div class="l-tags">${l.tags.map(t=>`<span class="l-tag">${t}</span>`).join('')}</div>
+      <div style="display:flex;gap:0.45rem;margin-top:0.5rem;">
+        <button class="l-consult" style="flex:1;" onclick="showPage('lawyerProfile')">View Profile</button>
+        <button class="l-consult" style="flex:1;" onclick="openBookModal('${l.name}')">Book</button>
+      </div>
+    </div>`).join('');
+}
+
+function applyFilter() {
+  renderLawyerGrid({
+    spec: document.getElementById('fSpec').value,
+    city: document.getElementById('fCity').value,
+    query: document.getElementById('lwSearch').value.toLowerCase()
+  });
+}
+function liveSearch(q) { applyFilter(); }
+function filterSpec(s) { showPage('findLawyer'); setTimeout(() => { document.getElementById('fSpec').value = s; applyFilter(); }, 100); }
+function filterAndGo(s) { filterSpec(s); }
+function handleHeroSearch() {
+  const q = document.getElementById('heroSearch').value.trim();
+  if (!q) return;
+  showPage('findLawyer');
+  setTimeout(() => { document.getElementById('lwSearch').value = q; applyFilter(); }, 100);
+}
+
+// ════════════════════════════════════
+//  DASHBOARD SECTIONS
+// ════════════════════════════════════
+function setClientSection(id) {
+  ['overview','myCases','consultations','documents','payments','profile'].forEach(s => {
+    const el = document.getElementById('cs-' + s);
+    if (el) el.style.display = s === id ? 'block' : 'none';
+  });
+}
+function setLawyerSection(id) {
+  ['overview','incoming','earnings','schedule','profile'].forEach(s => {
+    const el = document.getElementById('ls-' + s);
+    if (el) el.style.display = s === id ? 'block' : 'none';
+  });
+}
+function setAdminSection(id) {
+  ['overview','users','lawyers','cases','payments','disputes'].forEach(s => {
+    const el = document.getElementById('ad-' + s);
+    if (el) el.style.display = s === id ? 'block' : 'none';
+  });
+}
+
+// ════════════════════════════════════
+//  CHAT + FREE TIMER (10 MINUTES)
+// ════════════════════════════════════
+function startFreeTimer() {
+  freeTimerSeconds = 600;
+  stopFreeTimer();
+  updateTimerDisplay();
+  freeTimerInterval = setInterval(() => {
+    freeTimerSeconds--;
+    updateTimerDisplay();
+    if (freeTimerSeconds <= 0) {
+      stopFreeTimer();
+      showUpgradePrompt();
+    }
+  }, 1000);
+}
+function stopFreeTimer() { clearInterval(freeTimerInterval); }
+function updateTimerDisplay() {
+  const el = document.getElementById('freeTimerDisplay');
+  if (!el) return;
+  const m = String(Math.floor(freeTimerSeconds / 60)).padStart(2, '0');
+  const s = String(freeTimerSeconds % 60).padStart(2, '0');
+  el.textContent = m + ':' + s;
+  const bar = document.getElementById('chatTimerBar');
+  if (bar) bar.className = 'chat-timer-bar' + (freeTimerSeconds <= 60 ? ' expired' : '');
+}
+function showUpgradePrompt() {
+  const bar = document.getElementById('chatTimerBar');
+  if (bar) { bar.className = 'chat-timer-bar expired'; bar.innerHTML = 'Free chat session ended.'; }
+  const inputRow = document.getElementById('chatInputRow');
+  const upgradeBar = document.getElementById('upgradeBar');
+  if (inputRow) inputRow.style.display = 'none';
+  if (upgradeBar) upgradeBar.style.display = 'block';
+}
+function closeUpgrade() {
+  const upgradeBar = document.getElementById('upgradeBar');
+  const inputRow = document.getElementById('chatInputRow');
+  if (upgradeBar) upgradeBar.style.display = 'none';
+  if (inputRow) inputRow.style.display = 'flex';
+}
+
+function setChat(name, initials, item) {
+  document.getElementById('chatAv').textContent = initials;
+  document.getElementById('chatName').textContent = name;
+  document.querySelectorAll('.chat-item').forEach(c => c.classList.remove('active'));
+  item.classList.add('active');
+  const unread = item.querySelector('.ci-unread');
+  if (unread) unread.remove();
+}
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML += `<div class="msg sent"><div class="msg-bubble">${msg}</div><div class="msg-time">Just now</div></div>`;
+  input.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+  setTimeout(() => {
+    const replies = ['I understand. Let me look into this.', 'That\'s a good point. We should address this in our next hearing.', 'Please send me those documents and I\'ll review them.', 'I\'ll file the necessary paperwork this week.'];
+    msgs.innerHTML += `<div class="msg recv"><div class="msg-bubble">${replies[Math.floor(Math.random() * replies.length)]}</div><div class="msg-time">Just now</div></div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 1200);
+}
+
+// ════════════════════════════════════
+//  VIDEO CALL
+// ════════════════════════════════════
+function startVideoTimer() {
+  videoSeconds = 0;
+  videoInterval = setInterval(() => {
+    videoSeconds++;
+    const m = String(Math.floor(videoSeconds / 60)).padStart(2, '0');
+    const s = String(videoSeconds % 60).padStart(2, '0');
+    const el = document.getElementById('videoTimer');
+    if (el) el.textContent = m + ':' + s;
+  }, 1000);
+}
+function stopVideoTimer() { clearInterval(videoInterval); }
+function endCall() {
+  stopVideoTimer();
+  const el = document.getElementById('videoTimer');
+  toast('Consultation ended. Duration: ' + (el ? el.textContent : '00:00'));
+  showPage('clientDash');
+}
+function toggleBtn(btn, a, b) { btn.textContent = btn.textContent === a ? b : a; }
+
+// ════════════════════════════════════
+//  PRACTICE SLIDER PAUSE
+// ════════════════════════════════════
+function togglePracPause() {
+  pracPaused = !pracPaused;
+  const r1 = document.getElementById('pracRow1');
+  const r2 = document.getElementById('pracRow2');
+  const btn = document.getElementById('pracPauseBtn');
+  [r1, r2].forEach(r => { if (r) r.style.animationPlayState = pracPaused ? 'paused' : 'running'; });
+  if (btn) btn.textContent = pracPaused ? 'Resume Slider' : 'Pause Slider';
+}
+
+// ════════════════════════════════════
+//  LAWYERS SLIDER PAUSE
+// ════════════════════════════════════
+function toggleLawPause() {
+  lawPaused = !lawPaused;
+  const track = document.getElementById('lawyersTrack');
+  const btn = document.getElementById('lawPauseBtn');
+  if (track) track.style.animationPlayState = lawPaused ? 'paused' : 'running';
+  if (btn) btn.textContent = lawPaused ? 'Resume' : 'Pause';
+}
+// Auto-pause on hover
+document.addEventListener('DOMContentLoaded', () => {
+  const track = document.getElementById('lawyersTrack');
+  if (track) {
+    track.addEventListener('mouseenter', () => { if (!lawPaused) track.style.animationPlayState = 'paused'; });
+    track.addEventListener('mouseleave', () => { if (!lawPaused) track.style.animationPlayState = 'running'; });
+  }
+});
+
+// ════════════════════════════════════
+//  NOTIFICATIONS
+// ════════════════════════════════════
+function markAllRead() {
+  document.querySelectorAll('.notif-item.unread').forEach(n => n.classList.remove('unread'));
+  toast('All notifications marked as read.');
+}
+
+// ════════════════════════════════════
+//  EMERGENCY
+// ════════════════════════════════════
+function triggerEmergency() {
+  toast('Connecting to nearest available lawyer...');
+  setTimeout(() => toast('Adv. Rajiv Verma accepted your emergency case. Video call starting.'), 2500);
+  setTimeout(() => showPage('videoCall'), 4000);
+}
+
+// ════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ════════════════════════════════════
+//  SCROLL REVEAL
+// ════════════════════════════════════
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.step-item, .r-card, .feat-row').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  revealObs.observe(el);
+});
+
+// Init
+updateNav();
+</script>
+</body>
+</html>

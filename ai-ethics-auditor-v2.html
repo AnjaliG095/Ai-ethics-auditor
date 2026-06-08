@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EthosAI — Ethics Auditor</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Mono',monospace;background:#0a0a0f;color:#e8e8f0;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(126,255,196,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(126,255,196,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.wrap{max-width:860px;margin:0 auto;padding:0 20px 60px;position:relative;z-index:1}
+
+/* header */
+header{text-align:center;padding:40px 0 20px}
+.logo{display:inline-flex;align-items:center;gap:10px;margin-bottom:12px}
+.logo-box{width:36px;height:36px;background:#7effc4;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.logo-name{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;color:#7effc4;letter-spacing:-.5px}
+h1{font-family:'Syne',sans-serif;font-size:clamp(26px,5vw,44px);font-weight:800;letter-spacing:-1px;line-height:1.1;margin-bottom:8px}
+h1 em{font-style:normal;color:#7effc4}
+.sub{color:#6b6b88;font-size:11px;letter-spacing:.06em}
+
+/* step bar */
+.stepbar{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;row-gap:10px;margin:26px 0 28px}
+.step-item{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b6b88;transition:color .25s}
+.step-item.active{color:#7effc4}
+.step-item.done{color:#6b6b88}
+.snum{width:22px;height:22px;border-radius:50%;border:1px solid #2a2a3a;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .25s;flex-shrink:0}
+.step-item.active .snum{background:#7effc4;border-color:#7effc4;color:#000;font-weight:700}
+.step-item.done .snum{background:#1a1a26;border-color:#7effc4;color:#7effc4}
+.sline{width:24px;height:1px;background:#2a2a3a;margin:0 2px;flex-shrink:0}
+
+/* card */
+.card{background:#111118;border:1px solid #2a2a3a;border-radius:14px;padding:26px 28px;margin-bottom:14px;animation:up .32s ease both}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.ctitle{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.ctag{font-size:9px;background:#1a1a26;border:1px solid #2a2a3a;padding:2px 7px;border-radius:4px;color:#6b6b88;letter-spacing:.1em;font-weight:400}
+
+/* form fields */
+.field{margin-bottom:16px}
+.flabel{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b6b88;margin-bottom:6px}
+input[type=text],textarea,select{width:100%;background:#1a1a26;border:1px solid #2a2a3a;border-radius:8px;color:#e8e8f0;font-family:'DM Mono',monospace;font-size:12px;padding:10px 12px;outline:none;transition:border-color .2s}
+input[type=text]:focus,textarea:focus,select:focus{border-color:#7effc4;box-shadow:0 0 0 2px rgba(126,255,196,.06)}
+textarea{resize:vertical;min-height:90px}
+select option{background:#1a1a26}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.g2{grid-template-columns:1fr}}
+
+/* flag checkboxes */
+.flag-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:560px){.flag-grid{grid-template-columns:1fr}}
+.flag-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:9px;border:1px solid #2a2a3a;background:#1a1a26;cursor:pointer;transition:all .18s;user-select:none}
+.flag-item:hover{border-color:#7effc4}
+.flag-item.on{background:rgba(126,255,196,.07);border-color:#7effc4}
+.flag-item.on .fchk{background:#7effc4;border-color:#7effc4}
+.flag-item.on .fchk::after{opacity:1}
+.flag-item.on .fname{color:#7effc4}
+.fchk{width:16px;height:16px;border-radius:4px;border:1px solid #3a3a4a;background:transparent;flex-shrink:0;margin-top:1px;position:relative;transition:all .18s}
+.fchk::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;font-weight:700;opacity:0;transition:opacity .18s}
+.flag-right{}
+.fname{font-size:11px;color:#9a9ab0;line-height:1.4;transition:color .18s;display:block;margin-bottom:2px}
+.fscore{font-size:9px;color:#4a4a5a;letter-spacing:.06em}
+
+/* multi-choice questions */
+.qblock{display:flex;flex-direction:column;gap:0}
+.qitem{padding:16px 0;border-bottom:1px solid #1a1a26}
+.qitem:last-child{border-bottom:none}
+.qtext{font-size:12px;color:#e8e8f0;line-height:1.6;margin-bottom:11px}
+.qnum{color:#7effc4;font-family:'Syne',sans-serif;font-weight:700;margin-right:6px}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:7px;border:1px solid #2a2a3a;background:#1a1a26;cursor:pointer;transition:all .16s;user-select:none}
+.opt:hover{border-color:#7effc4}
+.opt.sel{background:rgba(126,255,196,.09);border-color:#7effc4}
+.opt.sel .odot{background:#7effc4;border-color:#7effc4}
+.opt.sel .olabel{color:#7effc4}
+.odot{width:13px;height:13px;border-radius:50%;border:1px solid #3a3a4a;background:transparent;flex-shrink:0;transition:all .16s}
+.olabel{font-size:11px;color:#9a9ab0;flex:1;transition:color .16s}
+.oscore{font-size:10px;color:#4a4a5a;letter-spacing:.04em;flex-shrink:0}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:12px 24px;border-radius:9px;border:none;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.02em}
+.primary{background:#7effc4;color:#000}
+.primary:hover{background:#9fffda;transform:translateY(-1px);box-shadow:0 8px 20px rgba(126,255,196,.2)}
+.secondary{background:#1a1a26;color:#e8e8f0;border:1px solid #2a2a3a}
+.secondary:hover{border-color:#7effc4}
+.brow{display:flex;gap:9px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+
+/* loading */
+#loading{display:none;text-align:center;padding:60px}
+.spin{width:36px;height:36px;border:2px solid #2a2a3a;border-top-color:#7effc4;border-radius:50%;margin:0 auto 14px;animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.ltxt{color:#6b6b88;font-size:11px;letter-spacing:.1em}
+
+/* ══ RESULTS ══ */
+#results{display:none}
+
+/* overall banner */
+.rbanner{border-radius:14px;padding:28px 30px;margin-bottom:14px;position:relative;overflow:hidden;animation:up .4s ease both}
+.rbanner::before{content:'';position:absolute;inset:0;opacity:.05;background:radial-gradient(circle at 20% 50%,currentColor 0%,transparent 60%)}
+.rbanner.low     {background:rgba(126,255,196,.07);border:1px solid rgba(126,255,196,.25);color:#7effc4}
+.rbanner.moderate{background:rgba(126,255,196,.05);border:1px solid rgba(126,255,196,.2);color:#a8ffda}
+.rbanner.medium  {background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.25);color:#ffd166}
+.rbanner.high    {background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.25);color:#ff6b6b}
+.rbanner.critical{background:rgba(255,60,60,.1);border:1px solid rgba(255,60,60,.4);color:#ff3c3c}
+.rhead{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.rcatl{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;opacity:.6;margin-bottom:3px}
+.rcatn{font-family:'Syne',sans-serif;font-size:26px;font-weight:800}
+.rsubn{font-size:10px;opacity:.45;margin-top:3px}
+.rscorebl{text-align:right}
+.rscore{font-family:'Syne',sans-serif;font-size:54px;font-weight:800;line-height:1}
+.rscorel{font-size:9px;opacity:.5;letter-spacing:.12em;text-transform:uppercase}
+.barwrap{height:5px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden}
+.barfill{height:100%;border-radius:99px;transition:width 1.1s cubic-bezier(.16,1,.3,1);background:currentColor}
+.barmarks{display:flex;justify-content:space-between;margin-top:4px;font-size:9px;opacity:.3;letter-spacing:.05em}
+
+/* formula card */
+.formula-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.formula-pill{flex:1;min-width:120px;background:#1a1a26;border:1px solid #2a2a3a;border-radius:10px;padding:14px;text-align:center}
+.fp-label{font-size:10px;color:#6b6b88;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.fp-score{font-family:'Syne',sans-serif;font-size:22px;font-weight:800}
+.fp-weight{font-size:9px;color:#4a4a5a;margin-top:3px}
+.fp-contrib{font-size:10px;margin-top:4px}
+
+/* flag section */
+.flag-section{margin-bottom:14px}
+.flag-section-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.flag-pills{display:flex;flex-wrap:wrap;gap:7px}
+.fpill{padding:5px 11px;border-radius:6px;font-size:10px;letter-spacing:.06em;font-weight:600;border:1px solid}
+.fpill.active-flag{background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.4);color:#ff6b6b}
+.fpill.inactive-flag{background:rgba(126,255,196,.06);border-color:rgba(126,255,196,.2);color:#7effc4}
+
+/* pillar grid */
+.pgrid5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:700px){.pgrid5{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:460px){.pgrid5{grid-template-columns:repeat(2,1fr)}}
+.pcard{background:#111118;border:1px solid #2a2a3a;border-radius:12px;padding:16px;animation:up .4s ease both;text-align:center}
+.pcard:nth-child(2){animation-delay:.06s}
+.pcard:nth-child(3){animation-delay:.12s}
+.pcard:nth-child(4){animation-delay:.18s}
+.pcard:nth-child(5){animation-delay:.24s}
+.picon{font-size:20px;margin-bottom:6px}
+.ptitle{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;color:#6b6b88;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.pscore-big{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1;margin-bottom:4px}
+.pw-label{font-size:9px;color:#4a4a5a;margin-bottom:8px}
+.pbwrap{height:3px;background:#1a1a26;border-radius:99px;overflow:hidden;margin-bottom:7px}
+.pb{height:100%;border-radius:99px;transition:width 1.1s cubic-bezier(.16,1,.3,1)}
+.pbadge{display:inline-block;font-size:8px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:4px;font-weight:600}
+.b-low{background:rgba(126,255,196,.12);color:#7effc4}
+.b-med{background:rgba(255,209,102,.12);color:#ffd166}
+.b-high{background:rgba(255,107,107,.12);color:#ff6b6b}
+.b-crit{background:rgba(255,60,60,.15);color:#ff3c3c}
+
+/* suggestions */
+.sug-list{list-style:none}
+.sug-item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #1a1a26;animation:up .35s ease both}
+.sug-item:last-child{border-bottom:none}
+.sug-icon{width:30px;height:30px;border-radius:7px;background:rgba(126,255,196,.07);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.sug-body{}
+.sug-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.sug-desc{font-size:11px;color:#6b6b88;line-height:1.65}
+.prio{display:inline-block;font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:4px;font-weight:600}
+.prio-crit  {background:rgba(255,60,60,.15);color:#ff3c3c}
+.prio-high  {background:rgba(255,107,107,.14);color:#ff6b6b}
+.prio-medium{background:rgba(255,209,102,.14);color:#ffd166}
+.prio-low   {background:rgba(126,255,196,.14);color:#7effc4}
+
+/* framework */
+.fw-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.fw-pill{padding:5px 12px;border-radius:6px;font-size:10px;background:#1a1a26;border:1px solid #2a2a3a;color:#6b6b88;letter-spacing:.04em}
+
+.frow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:6px}
+.fmeta{font-size:11px;color:#6b6b88}
+.fmeta strong{color:#e8e8f0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo">
+    <div class="logo-box">⚖</div>
+    <div class="logo-name">EthosAI</div>
+  </div>
+  <h1>AI Ethics <em>Auditor</em></h1>
+  <p class="sub">// flag detection · weighted scoring · mitigation engine</p>
+</header>
+
+<!-- STEP BAR -->
+<div class="stepbar">
+  <div class="step-item active" id="si1"><div class="snum">1</div><span>AI Info</span></div>
+  <div class="sline"></div>
+  <div class="step-item" id="si2"><div class="snum">2</div><span>Bias</span></div>
+  <div class="sline"></div>
+  <div class="step-item" id="si3"><div class="snum">3</div><span>Privacy Flags</span></div>
+  <div class="sline"></div>
+  <div class="step-item" id="si4"><div class="snum">4</div><span>Report</span></div>
+</div>
+
+<!-- ══════════════ STEP 1: AI INFO ══════════════ -->
+<div id="s1">
+  <div class="card">
+    <div class="ctitle">🤖 AI System Information <span class="ctag">STEP 01</span></div>
+    <div class="g2">
+      <div class="field">
+        <label class="flabel">AI Name</label>
+        <input type="text" id="aiName" placeholder="e.g. HireBot, FaceID Pro…">
+      </div>
+      <div class="field">
+        <label class="flabel">Application Type</label>
+        <select id="aiType">
+          <option value="">Select…</option>
+          <option value="chatbot">Chatbot / Virtual Assistant</option>
+          <option value="hiring">Hiring / Recruitment AI</option>
+          <option value="recommendation">Recommendation System</option>
+          <option value="medical">Medical / Health AI</option>
+          <option value="surveillance">Surveillance / Monitoring</option>
+          <option value="credit">Credit / Financial Scoring</option>
+          <option value="autonomous">Autonomous System</option>
+          <option value="face_recognition">Face Recognition System</option>
+          <option value="content">Content Generation</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="flabel">AI System Description</label>
+      <textarea id="purpose" placeholder="Describe the AI system in detail — what it does, what data it uses, how decisions are made…"></textarea>
+    </div>
+    <div class="g2">
+      <div class="field">
+        <label class="flabel">Primary Domain</label>
+        <select id="domain">
+          <option value="general">General AI</option>
+          <option value="healthcare">Healthcare</option>
+          <option value="finance">Finance</option>
+          <option value="hiring">Hiring</option>
+          <option value="education">Education</option>
+          <option value="surveillance">Surveillance</option>
+          <option value="autonomous">Autonomous System</option>
+          <option value="customer_support">Customer Support</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="flabel">Target Users</label>
+        <select id="targetUsers">
+          <option value="general">General Public</option>
+          <option value="vulnerable">Vulnerable Groups / Children</option>
+          <option value="employees">Employees</option>
+          <option value="patients">Healthcare Patients</option>
+          <option value="job_seekers">Job Seekers</option>
+          <option value="enterprises">Enterprises</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="brow">
+    <button class="btn primary" onclick="goStep(2)">Next: Bias Flag Detection →</button>
+  </div>
+</div>
+
+<!-- ══════════════ STEP 2: BIAS QUESTIONS ══════════════ -->
+<div id="s2" style="display:none">
+  <div class="card">
+    <div class="ctitle">⚖️ Bias &amp; Fairness Evaluation <span class="ctag">STEP 02</span></div>
+    <div class="qblock">
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q1.</span> Have you ever felt that this AI responds unfairly or differently to certain people or groups?</div>
+        <div class="opts">
+          <div class="opt" onclick="pick('b1',0,this)"><div class="odot"></div><div class="olabel">Never</div><div class="oscore">0 pts</div></div>
+          <div class="opt" onclick="pick('b1',1,this)"><div class="odot"></div><div class="olabel">Not sure</div><div class="oscore">1 pt</div></div>
+          <div class="opt" onclick="pick('b1',2,this)"><div class="odot"></div><div class="olabel">Yes, sometimes</div><div class="oscore">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q2.</span> Has the AI ever given responses that seemed stereotypical, offensive, or biased?</div>
+        <div class="opts">
+          <div class="opt" onclick="pick('b2',0,this)"><div class="odot"></div><div class="olabel">Never</div><div class="oscore">0 pts</div></div>
+          <div class="opt" onclick="pick('b2',1,this)"><div class="odot"></div><div class="olabel">Rarely</div><div class="oscore">1 pt</div></div>
+          <div class="opt" onclick="pick('b2',2,this)"><div class="odot"></div><div class="olabel">Often</div><div class="oscore">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q3.</span> Do you notice the AI giving different answers for similar questions asked by different users?</div>
+        <div class="opts">
+          <div class="opt" onclick="pick('b3',0,this)"><div class="odot"></div><div class="olabel">No</div><div class="oscore">0 pts</div></div>
+          <div class="opt" onclick="pick('b3',1,this)"><div class="odot"></div><div class="olabel">Not sure</div><div class="oscore">1 pt</div></div>
+          <div class="opt" onclick="pick('b3',2,this)"><div class="odot"></div><div class="olabel">Yes</div><div class="oscore">2 pts</div></div>
+        </div>
+      </div>
+
+      <div class="qitem">
+        <div class="qtext"><span class="qnum">Q4.</span> Do you trust this AI to treat all users fairly regardless of gender, age, or background?</div>
+        <div class="opts">
+          <div class="opt" onclick="pick('b4',0,this)"><div class="odot"></div><div class="olabel">Yes</div><div class="oscore">0 pts</div></div>
+          <div class="opt" onclick="pick('b4',1,this)"><div class="odot"></div><div class="olabel">Not sure</div><div class="oscore">1 pt</div></div>
+          <div class="opt" onclick="pick('b4',2,this)"><div class="odot"></div><div class="olabel">No</div><div class="oscore">2 pts</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="brow">
+    <button class="btn secondary" onclick="goStep(1)">← Back</button>
+    <button class="btn primary" onclick="goStep(3)">Next: Privacy Flags →</button>
+  </div>
+</div>
+
+<!-- ══════════════ STEP 3: PRIVACY FLAGS ══════════════ -->
+<div id="s3" style="display:none">
+  <div class="card">
+    <div class="ctitle">🔐 Privacy Risk Flag Detection <span class="ctag">STEP 03</span></div>
+    <p style="font-size:11px;color:#6b6b88;margin-bottom:18px;line-height:1.7">Select all privacy-related indicators that apply to this AI system.</p>
+    <div class="flag-grid">
+
+      <div class="flag-item" id="f_PRIV_PERSONAL" onclick="toggleFlag('PRIVACY_PERSONAL_DATA_FLAG',5,this)">
+        <div class="fchk"></div>
+        <div class="flag-right">
+          <span class="fname">Collects personal data (name, email, ID, etc.)</span>
+          <span class="fscore">PRIVACY_PERSONAL_DATA_FLAG · +5 pts</span>
+        </div>
+      </div>
+
+      <div class="flag-item" id="f_PRIV_CAMERA" onclick="toggleFlag('PRIVACY_CAMERA_FLAG',4,this)">
+        <div class="fchk"></div>
+        <div class="flag-right">
+          <span class="fname">Uses camera or image capture</span>
+          <span class="fscore">PRIVACY_CAMERA_FLAG · +4 pts</span>
+        </div>
+      </div>
+
+      <div class="flag-item" id="f_PRIV_CLOUD" onclick="toggleFlag('PRIVACY_CLOUD_FLAG',3,this)">
+        <div class="fchk"></div>
+        <div class="flag-right">
+          <span class="fname">Stores data in cloud</span>
+          <span class="fscore">PRIVACY_CLOUD_FLAG · +3 pts</span>
+        </div>
+      </div>
+
+      <div class="flag-item" id="f_PRIV_BIOMETRIC" onclick="toggleFlag('PRIVACY_BIOMETRIC_FLAG',5,this)">
+        <div class="fchk"></div>
+        <div class="flag-right">
+          <span class="fname">Stores or processes biometric data</span>
+          <span class="fscore">PRIVACY_BIOMETRIC_FLAG · +5 pts</span>
+        </div>
+      </div>
+
+      <div class="flag-item" id="f_PRIV_NO_ENC" onclick="toggleFlag('PRIVACY_NO_ENCRYPTION_FLAG',4,this)">
+        <div class="fchk"></div>
+        <div class="flag-right">
+          <span class="fname">No encryption mentioned or implemented</span>
+          <span class="fscore">PRIVACY_NO_ENCRYPTION_FLAG · +4 pts</span>
+        </div>
+      </div>
+
+      <div class="flag-item" id="f_PRIV_NO_CONSENT" onclick="toggleFlag('PRIVACY_NO_CONSENT_FLAG',5,this)">
+        <div class="fchk"></div>
+        <div class="flag-right">
+          <span class="fname">No user consent mechanism in place</span>
+          <span class="fscore">PRIVACY_NO_CONSENT_FLAG · +5 pts</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="brow">
+    <button class="btn secondary" onclick="goStep(2)">← Back</button>
+    <button class="btn primary" onclick="runReport()">Generate Ethics Report ⚡</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="spin"></div>
+  <p class="ltxt">// running flag detection · calculating weighted scores…</p>
+</div>
+
+<!-- ══════════════ STEP 5: REPORT ══════════════ -->
+<div id="results">
+
+  <!-- Overall Banner -->
+  <div class="rbanner" id="rbanner">
+    <div class="rhead">
+      <div>
+        <div class="rcatl">Ethical Risk Assessment</div>
+        <div class="rcatn" id="rcatn">—</div>
+        <div class="rsubn" id="rsubn">—</div>
+      </div>
+      <div class="rscorebl">
+        <div class="rscore" id="rscore">—</div>
+        <div class="rscorel">Final Score / 100</div>
+      </div>
+    </div>
+    <div class="barwrap"><div class="barfill" id="rbarfill" style="width:0%"></div></div>
+    <div class="barmarks">
+      <span>0 LOW</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100 CRITICAL</span>
+    </div>
+  </div>
+
+  <!-- Formula Breakdown Row -->
+  <div class="card" id="formulaCard" style="animation-delay:.05s">
+    <div class="ctitle">📊 Weighted Score Formula <span class="ctag">CALCULATION</span></div>
+    <p style="font-size:10px;color:#6b6b88;margin-bottom:14px;line-height:1.8;font-family:'DM Mono',monospace">
+      Total = (Bias×0.50) + (Privacy×0.50) &nbsp;→&nbsp; Final = Total × 10 (0–100 scale)
+    </p>
+    <div class="formula-row" id="formulaRow"></div>
+  </div>
+
+  <!-- 2 Pillar Scores -->
+  <div class="pgrid5" id="pgrid5" style="grid-template-columns:1fr 1fr"></div>
+
+  <!-- Detected Flags -->
+  <div class="card" style="animation-delay:.2s">
+    <div class="ctitle">🚩 Detected Risk Flags <span class="ctag">FLAG ANALYSIS</span></div>
+    <div class="flag-section">
+      <div class="flag-section-title">⚖️ Bias Flags</div>
+      <div class="flag-pills" id="biasFlagPills"></div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="flag-section">
+      <div class="flag-section-title">🔐 Privacy Flags</div>
+      <div class="flag-pills" id="privacyFlagPills"></div>
+    </div>
+  </div>
+
+  <!-- Mitigation Suggestions -->
+  <div class="card" style="animation-delay:.26s">
+    <div class="ctitle">🛠️ Mitigation Suggestions <span class="ctag">ACTION PLAN</span></div>
+    <ul class="sug-list" id="suglist"></ul>
+  </div>
+
+  <!-- Framework Reference -->
+  <div class="card" style="animation-delay:.32s">
+    <div class="ctitle">📚 Framework Reference <span class="ctag">INDUSTRY STANDARD</span></div>
+    <p style="font-size:11px;color:#6b6b88;margin-bottom:12px;line-height:1.7">This assessment is based on internationally recognised AI ethics frameworks:</p>
+    <div class="fw-row">
+      <span class="fw-pill">EU AI Act</span>
+      <span class="fw-pill">NIST AI RMF</span>
+      <span class="fw-pill">ISO/IEC 23894</span>
+      <span class="fw-pill">OECD AI Principles</span>
+    </div>
+  </div>
+
+  <div class="frow">
+    <div class="fmeta">Audited: <strong id="rname">—</strong> &nbsp;|&nbsp; Domain: <strong id="rdomain">—</strong></div>
+    <button class="btn secondary" onclick="restart()">← New Audit</button>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+// ── state ────────────────────────────────────────────
+var FLAGS = {};   // { FLAG_NAME: score_value }
+var ANS   = {};   // { q_id: numeric_value }
+
+var DOMAIN_LABEL = {
+  healthcare:'Healthcare', finance:'Finance', hiring:'Hiring',
+  education:'Education', surveillance:'Surveillance',
+  autonomous:'Autonomous System', customer_support:'Customer Support', general:'General AI'
+};
+
+// ── step bar ─────────────────────────────────────────
+function goStep(n) {
+  for (var i = 1; i <= 3; i++) {
+    document.getElementById('s' + i).style.display = (i === n) ? 'block' : 'none';
+  }
+  document.getElementById('results').style.display = 'none';
+  updateBar(n);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateBar(active) {
+  for (var i = 1; i <= 4; i++) {
+    var el = document.getElementById('si' + i);
+    el.classList.remove('active', 'done');
+    if (i < active)  el.classList.add('done');
+    if (i === active) el.classList.add('active');
+  }
+}
+
+// ── flag toggle ──────────────────────────────────────
+function toggleFlag(name, score, el) {
+  el.classList.toggle('on');
+  if (el.classList.contains('on')) {
+    FLAGS[name] = score;
+  } else {
+    delete FLAGS[name];
+  }
+}
+
+// ── answer picker ────────────────────────────────────
+function pick(qid, val, el) {
+  var siblings = el.parentElement.querySelectorAll('.opt');
+  for (var i = 0; i < siblings.length; i++) siblings[i].classList.remove('sel');
+  el.classList.add('sel');
+  ANS[qid] = val;
+}
+
+// ── scoring ───────────────────────────────────────────
+// Bias score: sum of Q1–Q4 answers (0/1/2 each, max 8)
+function calcBias() {
+  var keys = ['b1','b2','b3','b4'];
+  var s = 0;
+  for (var i = 0; i < keys.length; i++) s += (ANS[keys[i]] || 0);
+  return s; // max = 8
+}
+
+// Privacy score: sum of selected privacy flags
+function calcPrivacy() {
+  var s = 0;
+  var pKeys = ['PRIVACY_PERSONAL_DATA_FLAG','PRIVACY_CAMERA_FLAG','PRIVACY_CLOUD_FLAG','PRIVACY_BIOMETRIC_FLAG','PRIVACY_NO_ENCRYPTION_FLAG','PRIVACY_NO_CONSENT_FLAG'];
+  for (var i = 0; i < pKeys.length; i++) {
+    if (FLAGS[pKeys[i]]) s += FLAGS[pKeys[i]];
+  }
+  return s; // max possible = 26
+}
+
+// Transparency score: Q answers (0-2 each), 3 questions → max 6
+function calcTransparency() {
+  var keys = ['t1','t2','t3'];
+  var s = 0;
+  for (var i = 0; i < keys.length; i++) s += (ANS[keys[i]] || 0);
+  return s;
+}
+
+// Security score: Q answers, max 6
+function calcSecurity() {
+  var keys = ['sec1','sec2','sec3'];
+  var s = 0;
+  for (var i = 0; i < keys.length; i++) s += (ANS[keys[i]] || 0);
+  return s;
+}
+
+// Safety score: Q answers, max 6
+function calcSafety() {
+  var keys = ['saf1','saf2','saf3'];
+  var s = 0;
+  for (var i = 0; i < keys.length; i++) s += (ANS[keys[i]] || 0);
+  return s;
+}
+
+// Normalize any score to 0-10 scale for the formula
+function norm(score, maxScore) {
+  return (score / maxScore) * 10;
+}
+
+// Risk level helpers
+function riskClass(score) {
+  if (score <= 20) return 'low';
+  if (score <= 40) return 'moderate';
+  if (score <= 60) return 'medium';
+  if (score <= 80) return 'high';
+  return 'critical';
+}
+function riskLabel(score) {
+  if (score <= 20) return 'LOW RISK';
+  if (score <= 40) return 'MODERATE RISK';
+  if (score <= 60) return 'MEDIUM RISK';
+  if (score <= 80) return 'HIGH RISK';
+  return 'CRITICAL RISK';
+}
+function riskColor(score) {
+  if (score <= 20) return '#7effc4';
+  if (score <= 40) return '#a8ffda';
+  if (score <= 60) return '#ffd166';
+  if (score <= 80) return '#ff6b6b';
+  return '#ff3c3c';
+}
+function bCls(score) {
+  if (score <= 20) return 'b-low';
+  if (score <= 40) return 'b-low';
+  if (score <= 60) return 'b-med';
+  if (score <= 80) return 'b-high';
+  return 'b-crit';
+}
+
+// ── main report ──────────────────────────────────────
+function runReport() {
+  for (var i = 1; i <= 4; i++) document.getElementById('s' + i).style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+
+  setTimeout(function() {
+    document.getElementById('loading').style.display = 'none';
+
+    var name   = document.getElementById('aiName').value.trim() || 'Unnamed AI';
+    var domain = document.getElementById('domain').value || 'general';
+
+    // raw scores
+    var rawBias  = calcBias();
+    var rawPriv  = calcPrivacy();
+    var rawTrans = 0;
+    var rawSec   = 0;
+    var rawSafe  = 0;
+
+    // normalize each to 0–10 scale
+    var nBias  = norm(rawBias,   8);   // max 8 (4 questions × 2pts)
+    var nPriv  = norm(rawPriv,  26);   // max 26 (flag-based)
+    var nTrans = 0;
+    var nSec   = 0;
+    var nSafe  = 0;
+
+    // weighted total — Bias 50%, Privacy 50%
+    var total = (nBias * 0.50) + (nPriv * 0.50);
+
+    // final score 0–100
+    var finalScore = Math.min(100, Math.round(total * 10));
+
+    var cat = riskClass(finalScore);
+    var catLbl = riskLabel(finalScore);
+
+    // ── banner ──
+    document.getElementById('results').style.display = 'block';
+    updateBar(4);
+
+    document.getElementById('rbanner').className = 'rbanner ' + cat;
+    document.getElementById('rcatn').textContent  = catLbl;
+    document.getElementById('rsubn').textContent  = name + '  ·  ' + (DOMAIN_LABEL[domain] || 'General AI');
+    document.getElementById('rscore').textContent = finalScore;
+    document.getElementById('rname').textContent  = name;
+    document.getElementById('rdomain').textContent = DOMAIN_LABEL[domain] || 'General AI';
+
+    setTimeout(function() {
+      document.getElementById('rbarfill').style.width = finalScore + '%';
+    }, 120);
+
+    // ── formula row ──
+    var pillars = [
+      { label:'Bias',    icon:'⚖️',  raw: rawBias, norm: nBias, weight:'×0.50', contrib: Math.round(nBias*0.50*100)/100 },
+      { label:'Privacy', icon:'🔐', raw: rawPriv, norm: nPriv, weight:'×0.50', contrib: Math.round(nPriv*0.50*100)/100 }
+    ];
+
+    var fHtml = '';
+    for (var fi = 0; fi < pillars.length; fi++) {
+      var p = pillars[fi];
+      var col = riskColor(p.norm * 10);
+      fHtml += '<div class="formula-pill">' +
+        '<div class="fp-label">' + p.icon + ' ' + p.label + '</div>' +
+        '<div class="fp-score" style="color:' + col + '">' + Math.round(p.norm * 10) / 10 + '</div>' +
+        '<div class="fp-weight" style="color:#6b6b88">' + p.weight + '</div>' +
+        '<div class="fp-contrib" style="color:' + col + '">contrib: ' + p.contrib + '</div>' +
+      '</div>';
+    }
+    document.getElementById('formulaRow').innerHTML = fHtml;
+
+    // ── 5 pillar cards ──
+    var PILLAR_MAX = [8, 26];
+    var p5Html = '';
+    for (var pi = 0; pi < pillars.length; pi++) {
+      var pl = pillars[pi];
+      var pctBar = Math.round((pl.raw / PILLAR_MAX[pi]) * 100);
+      var col2 = riskColor(pl.norm * 10);
+      p5Html += '<div class="pcard" style="animation-delay:' + (pi*0.06) + 's">' +
+        '<div class="picon">' + pl.icon + '</div>' +
+        '<div class="ptitle">' + pl.label + '</div>' +
+        '<div class="pscore-big" style="color:' + col2 + '">' + pl.raw + '</div>' +
+        '<div class="pw-label">weight ' + pl.weight + '</div>' +
+        '<div class="pbwrap"><div class="pb" id="ppb' + pi + '" style="width:0%;background:' + col2 + '"></div></div>' +
+        '<span class="pbadge ' + bCls(pl.norm * 10) + '">' + (pl.norm <= 2 ? 'LOW' : pl.norm <= 5 ? 'MED' : 'HIGH') + '</span>' +
+      '</div>';
+    }
+    document.getElementById('pgrid5').innerHTML = p5Html;
+
+    setTimeout(function() {
+      for (var pi2 = 0; pi2 < pillars.length; pi2++) {
+        var el2 = document.getElementById('ppb' + pi2);
+        if (el2) el2.style.width = Math.round((pillars[pi2].raw / PILLAR_MAX[pi2]) * 100) + '%';
+      }
+    }, 200);
+
+    // ── flag pills ──
+    var allBiasFlags = ['BIAS_FACE_FLAG','BIAS_GENDER_FLAG','BIAS_RACE_FLAG','BIAS_AUTO_DECISION_FLAG','BIAS_UNKNOWN_DATA_FLAG','BIAS_NO_FAIRNESS_FLAG'];
+    var allPrivFlags = ['PRIVACY_PERSONAL_DATA_FLAG','PRIVACY_CAMERA_FLAG','PRIVACY_CLOUD_FLAG','PRIVACY_BIOMETRIC_FLAG','PRIVACY_NO_ENCRYPTION_FLAG','PRIVACY_NO_CONSENT_FLAG'];
+
+    function makePills(flagList, containerId) {
+      var html = '';
+      for (var fi2 = 0; fi2 < flagList.length; fi2++) {
+        var fname = flagList[fi2];
+        var active = FLAGS[fname] ? true : false;
+        html += '<span class="fpill ' + (active ? 'active-flag' : 'inactive-flag') + '">' +
+          (active ? '🚩 ' : '✓ ') + fname.replace(/_FLAG$/,'').replace(/_/g,' ') + (active ? ' (+' + FLAGS[fname] + ')' : '') +
+        '</span>';
+      }
+      document.getElementById(containerId).innerHTML = html;
+    }
+    makePills(allBiasFlags, 'biasFlagPills');
+    makePills(allPrivFlags, 'privacyFlagPills');
+
+    // ── mitigation suggestions ──────────────────────────────
+    var sugs = [];
+    function addS(icon, title, points, prio) {
+      sugs.push({ icon: icon, title: title, points: points, prio: prio });
+    }
+
+    // Bias mitigations (based on Q answer scores)
+    var biasTotalScore = (ANS['b1']||0) + (ANS['b2']||0) + (ANS['b3']||0) + (ANS['b4']||0);
+
+    if ((ANS['b1']||0) >= 1 || (ANS['b4']||0) >= 1)
+      addS('⚖️','Demographic Bias Controls',
+        ['Audit model outputs across demographic groups','Remove or anonymize demographic identifiers where not essential','Implement fairness-aware machine learning techniques'],
+        (ANS['b1']||0) >= 2 || (ANS['b4']||0) >= 2 ? 'high' : 'medium');
+
+    if ((ANS['b2']||0) >= 1)
+      addS('🔬','Address Stereotypical Responses',
+        ['Review training data for offensive or stereotypical patterns','Implement content filters and response monitoring','Conduct red-team testing targeting stereotypical outputs'],
+        (ANS['b2']||0) >= 2 ? 'high' : 'medium');
+
+    if ((ANS['b3']||0) >= 1)
+      addS('🤝','Ensure Consistent Response Quality',
+        ['Test AI responses across diverse user profiles','Implement fairness metrics to measure response consistency','Schedule regular cross-demographic output audits'],
+        (ANS['b3']||0) >= 2 ? 'high' : 'medium');
+
+    if (biasTotalScore === 0)
+      addS('✅','Bias Checks Clear',
+        ['No bias concerns detected from assessment. Continue periodic audits.'],
+        'low');
+
+    // Privacy mitigations (flag-based as per spec)
+    if (FLAGS['PRIVACY_PERSONAL_DATA_FLAG'])
+      addS('🗂️','Minimise Personal Data Collection',
+        ['Apply data minimisation — collect only what is strictly necessary','Implement data anonymisation or pseudonymisation','Document data retention policy and deletion procedures'],
+        'high');
+
+    if (FLAGS['PRIVACY_BIOMETRIC_FLAG'])
+      addS('👁️','Biometric Data Protection',
+        ['Store biometric data using secure encrypted storage','Implement strict role-based access control','Add explicit consent mechanism before biometric capture'],
+        'critical');
+
+    if (FLAGS['PRIVACY_CLOUD_FLAG'])
+      addS('☁️','Secure Cloud Storage',
+        ['Enable encryption at rest for all cloud-stored data','Enable encryption in transit (TLS 1.3 or higher)','Use a compliant cloud provider (ISO 27001, SOC 2)'],
+        'high');
+
+    if (FLAGS['PRIVACY_NO_ENCRYPTION_FLAG'])
+      addS('🔐','Implement Encryption',
+        ['Encrypt all data at rest using AES-256','Encrypt all data in transit using TLS','Manage encryption keys using a secure key management system'],
+        'critical');
+
+    if (FLAGS['PRIVACY_NO_CONSENT_FLAG'])
+      addS('✅','Add Consent Mechanism',
+        ['Build a clear opt-in consent flow before data collection','Allow users to withdraw consent and delete their data','Comply with GDPR / CCPA consent requirements'],
+        'critical');
+
+    if (FLAGS['PRIVACY_CAMERA_FLAG'])
+      addS('📸','Camera Usage Controls',
+        ['Notify users when camera is active','Store camera data with end-to-end encryption','Limit camera data retention to minimum required period'],
+        'medium');
+
+    if (sugs.length === 0)
+      addS('✅','All Clear',
+        ['No critical flags detected. Continue periodic audits.','Document your ethical practices and keep policies updated.','Consider certifying under ISO/IEC 42001 AI Management System.'],
+        'low');
+
+    var prioCls = { critical:'prio-crit', high:'prio-high', medium:'prio-medium', low:'prio-low' };
+    var sugHtml = '';
+    for (var si = 0; si < sugs.length; si++) {
+      var sg = sugs[si];
+      var pts = '';
+      for (var bi = 0; bi < sg.points.length; bi++) {
+        pts += '<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:3px"><span style="color:#7effc4;flex-shrink:0">→</span><span>' + sg.points[bi] + '</span></div>';
+      }
+      sugHtml += '<li class="sug-item" style="animation-delay:' + (si*0.06) + 's">' +
+        '<div class="sug-icon">' + sg.icon + '</div>' +
+        '<div class="sug-body">' +
+          '<div class="sug-title">' + sg.title + '<span class="prio ' + prioCls[sg.prio] + '">' + sg.prio.toUpperCase() + '</span></div>' +
+          '<div class="sug-desc">' + pts + '</div>' +
+        '</div>' +
+      '</li>';
+    }
+    document.getElementById('suglist').innerHTML = sugHtml;
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 1100);
+}
+
+// ── restart ──────────────────────────────────────────
+function restart() {
+  FLAGS = {};
+  ANS   = {};
+  var flagEls = document.querySelectorAll('.flag-item');
+  for (var i = 0; i < flagEls.length; i++) flagEls[i].classList.remove('on');
+  var opts = document.querySelectorAll('.opt');
+  for (var j = 0; j < opts.length; j++) opts[j].classList.remove('sel');
+  document.getElementById('aiName').value  = '';
+  document.getElementById('purpose').value = '';
+  document.getElementById('aiType').value  = '';
+  document.getElementById('domain').value  = 'general';
+  document.getElementById('results').style.display = 'none';
+  goStep(1);
+}
+</script>
+</body>
+</html>

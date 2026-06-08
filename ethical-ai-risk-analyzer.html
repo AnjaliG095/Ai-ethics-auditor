@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ethical AI Risk Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0d14;
+    --surface: #111520;
+    --border: #1e2535;
+    --accent: #00e5ff;
+    --warn: #ff6b35;
+    --danger: #ff2d55;
+    --safe: #00e676;
+    --text: #e8edf5;
+    --muted: #5a6480;
+    --card: #141926;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo-mark {
+    width: 48px; height: 48px;
+    border: 2px solid var(--accent);
+    display: grid;
+    place-items: center;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+    font-size: 18px;
+    font-weight: 700;
+    flex-shrink: 0;
+    animation: pulse-border 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,255,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(0,229,255,0); }
+  }
+
+  .header-text h1 {
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+
+  .header-text h1 span { color: var(--accent); }
+
+  .header-text p {
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    margin-top: 4px;
+  }
+
+  /* Form */
+  .form-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 32px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  input, textarea, select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    padding: 12px 14px;
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
+  }
+
+  textarea { min-height: 100px; resize: vertical; }
+
+  select option { background: var(--surface); }
+
+  .checkbox-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    font-size: 13px;
+  }
+
+  .checkbox-item:hover { border-color: var(--accent); background: rgba(0,229,255,0.04); }
+  .checkbox-item.checked { border-color: var(--accent); background: rgba(0,229,255,0.08); }
+
+  .checkbox-item input[type="checkbox"] {
+    width: 14px; height: 14px;
+    padding: 0;
+    accent-color: var(--accent);
+  }
+
+  .analyze-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    margin-top: 24px;
+    transition: background 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .analyze-btn:hover { background: #33eaff; }
+  .analyze-btn:active { transform: scale(0.99); }
+
+  .analyze-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+  }
+
+  .analyze-btn:hover::after { transform: translateX(100%); }
+
+  /* Results */
+  #results {
+    display: none;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .score-hero {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 40px 32px;
+    text-align: center;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .score-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--score-color, var(--accent));
+  }
+
+  .overall-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .score-ring {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 20px;
+    position: relative;
+  }
+
+  .score-ring svg { transform: rotate(-90deg); }
+
+  .score-number {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 800;
+  }
+
+  .score-number small {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .risk-badge {
+    display: inline-block;
+    padding: 6px 20px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .verdict { font-size: 15px; color: var(--muted); max-width: 500px; margin: 0 auto; }
+
+  /* Dimension cards */
+  .dimensions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 600px) { .dimensions-grid { grid-template-columns: 1fr; } }
+
+  .dim-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+
+  .dim-card:hover { border-color: var(--muted); }
+
+  .dim-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .dim-name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  .dim-score {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+
+  .dim-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* Flags */
+  .flags-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .flag-item {
+    display: flex;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .flag-item:last-child { border-bottom: none; }
+
+  .flag-icon {
+    width: 32px; height: 32px;
+    border-radius: 2px;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .flag-content h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .flag-content p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* Mitigations */
+  .mitigation-list { list-style: none; }
+
+  .mitigation-list li {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .mitigation-list li:last-child { border-bottom: none; }
+
+  .mit-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    flex-shrink: 0;
+    padding-top: 1px;
+    min-width: 24px;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 60px 0;
+    display: none;
+  }
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading p {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  footer {
+    text-align: center;
+    padding: 48px 0 32px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    margin-top: 48px;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(0,229,255,0.1);
+    color: var(--accent);
+    font-size: 10px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+    border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="header-inner">
+      <div class="logo-mark">⚖</div>
+      <div class="header-text">
+        <h1>Ethical AI <span>Risk Analyzer</span></h1>
+        <p>// evaluate · score · mitigate</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- INPUT FORM -->
+  <div class="form-section">
+    <div class="section-label">AI Application Details</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Application Name</label>
+        <input type="text" id="appName" placeholder="e.g., HireBot AI" />
+      </div>
+      <div class="field">
+        <label>Domain / Industry</label>
+        <select id="domain">
+          <option value="">Select domain...</option>
+          <option>Healthcare</option>
+          <option>Finance & Banking</option>
+          <option>Criminal Justice</option>
+          <option>Hiring & HR</option>
+          <option>Education</option>
+          <option>Social Media</option>
+          <option>Government & Policy</option>
+          <option>Autonomous Vehicles</option>
+          <option>Retail & E-commerce</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label>What does this AI system do?</label>
+        <textarea id="description" placeholder="Describe the AI application — its purpose, inputs, outputs, and how decisions are made..."></textarea>
+      </div>
+      <div class="field">
+        <label>Target Users</label>
+        <input type="text" id="users" placeholder="e.g., Job applicants, patients" />
+      </div>
+      <div class="field">
+        <label>Data Sources Used</label>
+        <input type="text" id="dataSources" placeholder="e.g., Historical records, social data" />
+      </div>
+      <div class="field full">
+        <label>Training Data Description</label>
+        <textarea id="trainingData" placeholder="Describe the training data: origin, size, time period, known gaps or imbalances..." style="min-height:70px"></textarea>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:28px">Risk Indicators</div>
+    <div class="checkbox-group" id="indicators">
+      <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+        <input type="checkbox" value="automated_decisions"> Makes automated decisions about people
+      </label>
+      <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+        <input type="checkbox" value="sensitive_data"> Uses sensitive personal data
+      </label>
+      <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+        <input type="checkbox" value="no_explainability"> Lacks explainability / black box
+      </label>
+      <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+        <input type="checkbox" value="minority_impact"> Disproportionately affects minorities
+      </label>
+      <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+        <input type="checkbox" value="no_human_override"> No human override mechanism
+      </label>
+      <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+        <input type="checkbox" value="realtime_surveillance"> Real-time surveillance or monitoring
+      </label>
+      <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+        <input type="checkbox" value="high_stakes"> High-stakes irreversible outcomes
+      </label>
+      <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+        <input type="checkbox" value="third_party_data"> Third-party or scraped data
+      </label>
+    </div>
+
+    <button class="analyze-btn" onclick="analyze()">▶ ANALYZE ETHICAL RISKS</button>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>RUNNING RISK ASSESSMENT...</p>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+
+    <div class="score-hero" id="scoreHero">
+      <div class="overall-label">Overall Risk Assessment</div>
+      <div class="score-ring">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#1e2535" stroke-width="8"/>
+          <circle id="ringCircle" cx="60" cy="60" r="52" fill="none" stroke="#00e5ff" stroke-width="8"
+            stroke-dasharray="326.7" stroke-dashoffset="326.7" stroke-linecap="round"
+            style="transition: stroke-dashoffset 1.4s cubic-bezier(0.4,0,0.2,1)"/>
+        </svg>
+        <div class="score-number">
+          <span id="scoreDisplay">0</span>
+          <small>/100</small>
+        </div>
+      </div>
+      <div class="risk-badge" id="riskBadge">—</div>
+      <div class="verdict" id="verdict"></div>
+    </div>
+
+    <div class="dimensions-grid" id="dimensionsGrid"></div>
+
+    <div class="flags-section" id="flagsSection">
+      <div class="section-label">Detected Risk Flags</div>
+      <div id="flagsList"></div>
+    </div>
+
+    <div class="form-section" id="mitigationsSection">
+      <div class="section-label">Mitigation Recommendations</div>
+      <ul class="mitigation-list" id="mitigationsList"></ul>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Ethical AI Risk Analyzer · Hackathon Edition 2025</p>
+  </footer>
+</div>
+
+<script>
+function getChecked() {
+  return [...document.querySelectorAll('#indicators input:checked')].map(i => i.value);
+}
+
+function analyze() {
+  const name = document.getElementById('appName').value.trim() || 'Unnamed AI System';
+  const domain = document.getElementById('domain').value;
+  const desc = document.getElementById('description').value.trim();
+  const users = document.getElementById('users').value.trim();
+  const dataSources = document.getElementById('dataSources').value.trim();
+  const trainingData = document.getElementById('trainingData').value.trim();
+  const checked = getChecked();
+
+  // Show loading
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+
+  setTimeout(() => {
+    const result = computeRisk(name, domain, desc, users, dataSources, trainingData, checked);
+    renderResults(result);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+    setTimeout(() => animateResults(result), 100);
+  }, 1600);
+}
+
+function computeRisk(name, domain, desc, users, dataSources, trainingData, checked) {
+  // Dimension scoring (0-100, higher = more risky)
+  let bias = 20, privacy = 20, safety = 20, transparency = 20, autonomy = 20, accountability = 20;
+
+  const text = (desc + ' ' + trainingData + ' ' + dataSources).toLowerCase();
+
+  // Domain risk modifiers
+  const highRiskDomains = ['criminal justice', 'healthcare', 'finance & banking', 'government & policy'];
+  const domainBoost = highRiskDomains.some(d => domain.toLowerCase().includes(d.toLowerCase())) ? 20 : 0;
+
+  // Text heuristics
+  if (text.includes('historic') || text.includes('past data')) bias += 20;
+  if (text.includes('gender') || text.includes('race') || text.includes('ethnicity')) bias += 15;
+  if (text.includes('scraped') || text.includes('social media')) { privacy += 25; bias += 10; }
+  if (text.includes('medical') || text.includes('health')) privacy += 25;
+  if (text.includes('facial') || text.includes('biometric')) { privacy += 30; safety += 15; }
+  if (text.includes('loan') || text.includes('credit') || text.includes('recidivism')) { bias += 25; safety += 20; }
+  if (text.includes('neural') || text.includes('deep learning') || text.includes('llm')) transparency += 20;
+  if (text.includes('automated') || text.includes('automatic')) { autonomy += 20; accountability += 15; }
+
+  // Checkbox modifiers
+  if (checked.includes('automated_decisions')) { safety += 20; autonomy += 25; accountability += 20; }
+  if (checked.includes('sensitive_data')) privacy += 30;
+  if (checked.includes('no_explainability')) { transparency += 35; accountability += 20; }
+  if (checked.includes('minority_impact')) bias += 35;
+  if (checked.includes('no_human_override')) { autonomy += 35; accountability += 25; safety += 15; }
+  if (checked.includes('realtime_surveillance')) { privacy += 35; safety += 10; }
+  if (checked.includes('high_stakes')) { safety += 30; accountability += 20; }
+  if (checked.includes('third_party_data')) { privacy += 20; bias += 10; }
+
+  // Add domain boost
+  bias += domainBoost; safety += domainBoost; privacy += domainBoost * 0.5;
+
+  // Clamp
+  const clamp = v => Math.min(100, Math.max(0, Math.round(v)));
+  bias = clamp(bias); privacy = clamp(privacy); safety = clamp(safety);
+  transparency = clamp(transparency); autonomy = clamp(autonomy); accountability = clamp(accountability);
+
+  const overall = Math.round((bias + privacy + safety + transparency + autonomy + accountability) / 6);
+
+  const dimensions = [
+    { name: 'Bias & Fairness', score: bias, desc: 'Risk of discriminatory outcomes across protected groups.' },
+    { name: 'Privacy', score: privacy, desc: 'Data collection, retention, and potential for surveillance.' },
+    { name: 'Safety & Harm', score: safety, desc: 'Probability and severity of real-world harms to individuals.' },
+    { name: 'Transparency', score: transparency, desc: 'Explainability of decisions and model interpretability.' },
+    { name: 'Human Autonomy', score: autonomy, desc: 'Degree to which the system overrides human judgment.' },
+    { name: 'Accountability', score: accountability, desc: 'Clarity of responsibility and auditability of the system.' },
+  ];
+
+  // Flags
+  const flags = [];
+  if (bias > 55) flags.push({ level: 'danger', icon: '⚠', title: 'High Bias Risk Detected', desc: 'The system may produce discriminatory or unfair outcomes. Historical data patterns and lack of fairness constraints increase this risk significantly.' });
+  if (privacy > 60) flags.push({ level: 'danger', icon: '🔒', title: 'Serious Privacy Concerns', desc: 'Sensitive or personal data is being collected and processed without clear protections, potentially violating GDPR, HIPAA, or other regulations.' });
+  if (checked.includes('no_explainability')) flags.push({ level: 'warn', icon: '🔍', title: 'Black Box Model', desc: 'Without explainability, affected individuals cannot understand or contest decisions made about them.' });
+  if (checked.includes('no_human_override')) flags.push({ level: 'danger', icon: '🤖', title: 'No Human Override', desc: 'Fully automated decisions without human checkpoints dramatically increase risk of unchecked errors.' });
+  if (checked.includes('realtime_surveillance')) flags.push({ level: 'danger', icon: '📷', title: 'Real-Time Surveillance', desc: 'Continuous monitoring creates chilling effects on behavior and raises serious civil liberties concerns.' });
+  if (safety > 60) flags.push({ level: 'warn', icon: '⚡', title: 'High-Stakes Decision Making', desc: 'This system operates in a domain where errors can have severe, potentially irreversible consequences on people\'s lives.' });
+  if (checked.includes('third_party_data')) flags.push({ level: 'warn', icon: '📦', title: 'Third-Party Data Risk', desc: 'External data sources may contain biases, consent issues, or legal complications not under your control.' });
+
+  if (flags.length === 0) flags.push({ level: 'safe', icon: '✓', title: 'No Critical Flags', desc: 'No major risk indicators detected based on provided information. Continue to monitor as system evolves.' });
+
+  // Mitigations
+  const mits = [];
+  if (bias > 40) mits.push('Conduct pre-deployment fairness audits across all protected attributes (gender, race, age, disability). Use tools like IBM AI Fairness 360 or Microsoft Fairlearn.');
+  if (privacy > 40) mits.push('Implement Privacy by Design: minimize data collection, apply differential privacy, encrypt all PII, and establish clear data retention and deletion policies.');
+  if (checked.includes('no_explainability')) mits.push('Integrate explainability tools (SHAP, LIME) to generate human-readable explanations for each decision. Provide plain-language decision summaries to affected users.');
+  if (checked.includes('no_human_override')) mits.push('Establish mandatory human review checkpoints for high-impact decisions. Define clear escalation pathways and create a right-to-appeal process.');
+  if (safety > 50) mits.push('Deploy staged rollout with continuous safety monitoring. Set automated kill switches and anomaly detection. Define acceptable risk thresholds with stakeholder consensus.');
+  if (checked.includes('realtime_surveillance')) mits.push('Apply data minimization to surveillance outputs. Require explicit consent, log all access, and enforce purpose limitation on surveillance data use.');
+  if (accountability < 60 || checked.includes('automated_decisions')) mits.push('Document an AI accountability matrix with named responsible parties. Maintain comprehensive audit trails and establish an external ethics review board.');
+  mits.push('Adopt an ongoing ethics review cycle: quarterly bias re-evaluation as real-world data distributions shift over time.');
+  mits.push('Engage affected communities in co-design and testing before full deployment. Create accessible feedback mechanisms post-launch.');
+
+  return { name, overall, dimensions, flags, mits };
+}
+
+function getRiskLevel(score) {
+  if (score >= 75) return { label: 'CRITICAL RISK', color: '#ff2d55' };
+  if (score >= 55) return { label: 'HIGH RISK', color: '#ff6b35' };
+  if (score >= 35) return { label: 'MODERATE RISK', color: '#ffd60a' };
+  return { label: 'LOW RISK', color: '#00e676' };
+}
+
+function getDimColor(score) {
+  if (score >= 75) return '#ff2d55';
+  if (score >= 55) return '#ff6b35';
+  if (score >= 35) return '#ffd60a';
+  return '#00e676';
+}
+
+function renderResults(r) {
+  const { label, color } = getRiskLevel(r.overall);
+  document.getElementById('scoreHero').style.setProperty('--score-color', color);
+  document.getElementById('riskBadge').textContent = label;
+  document.getElementById('riskBadge').style.cssText = `background:${color}22; color:${color}`;
+  document.getElementById('verdict').textContent = generateVerdict(r.overall, r.name);
+
+  // Dimensions
+  const grid = document.getElementById('dimensionsGrid');
+  grid.innerHTML = r.dimensions.map(d => `
+    <div class="dim-card">
+      <div class="dim-header">
+        <span class="dim-name">${d.name}</span>
+        <span class="dim-score" style="color:${getDimColor(d.score)}">${d.score}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="background:${getDimColor(d.score)}" data-width="${d.score}"></div></div>
+      <div class="dim-desc">${d.desc}</div>
+    </div>
+  `).join('');
+
+  // Flags
+  const flagColors = { danger: '#ff2d55', warn: '#ff6b35', safe: '#00e676' };
+  document.getElementById('flagsList').innerHTML = r.flags.map(f => `
+    <div class="flag-item">
+      <div class="flag-icon" style="background:${flagColors[f.level]}22; color:${flagColors[f.level]}">${f.icon}</div>
+      <div class="flag-content">
+        <h4 style="color:${flagColors[f.level]}">${f.title}</h4>
+        <p>${f.desc}</p>
+      </div>
+    </div>
+  `).join('');
+
+  // Mitigations
+  document.getElementById('mitigationsList').innerHTML = r.mits.map((m, i) =>
+    `<li><span class="mit-num">${String(i+1).padStart(2,'0')}.</span><span>${m}</span></li>`
+  ).join('');
+}
+
+function animateResults(r) {
+  // Ring animation
+  const circumference = 326.7;
+  const offset = circumference - (r.overall / 100) * circumference;
+  const { color } = getRiskLevel(r.overall);
+  const ring = document.getElementById('ringCircle');
+  ring.style.stroke = color;
+  ring.style.strokeDashoffset = offset;
+
+  // Count up score
+  let count = 0;
+  const target = r.overall;
+  const interval = setInterval(() => {
+    count = Math.min(count + 2, target);
+    document.getElementById('scoreDisplay').textContent = count;
+    if (count >= target) clearInterval(interval);
+  }, 20);
+
+  // Progress bars
+  setTimeout(() => {
+    document.querySelectorAll('.progress-fill').forEach(el => {
+      el.style.width = el.dataset.width + '%';
+    });
+  }, 200);
+}
+
+function generateVerdict(score, name) {
+  if (score >= 75) return `${name} presents critical ethical risks requiring immediate remediation before any deployment. Multiple high-severity issues detected.`;
+  if (score >= 55) return `${name} shows significant ethical risks. Deployment should be paused until key mitigations are implemented and independently verified.`;
+  if (score >= 35) return `${name} carries moderate ethical risks manageable with targeted interventions. Proceed with caution and ongoing monitoring.`;
+  return `${name} shows relatively low ethical risk based on provided information. Maintain vigilance and reassess as the system scales.`;
+}
+</script>
+</body>
+</html>

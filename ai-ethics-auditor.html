@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EthosAI — Ethics Auditor</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --accent: #7effc4;
+    --accent2: #ff6b6b;
+    --accent3: #ffd166;
+    --text: #e8e8f0;
+    --muted: #6b6b88;
+    --low: #7effc4;
+    --medium: #ffd166;
+    --high: #ff6b6b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(126,255,196,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(126,255,196,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* Header */
+  header {
+    padding: 48px 0 32px;
+    text-align: center;
+  }
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Steps indicator */
+  .steps {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin: 36px 0 32px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    transition: color 0.3s;
+  }
+  .step.active { color: var(--accent); }
+  .step.done { color: var(--muted); }
+  .step-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    transition: all 0.3s;
+  }
+  .step.active .step-num {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 700;
+  }
+  .step.done .step-num {
+    background: var(--surface2);
+    border-color: var(--muted);
+  }
+  .step-line {
+    width: 40px; height: 1px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.4s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-title .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* Form elements */
+  .field { margin-bottom: 20px; }
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  input, textarea, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 12px 14px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(126,255,196,0.08);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  select option { background: var(--surface2); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* Toggle group */
+  .toggle-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .toggle-btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .toggle-btn:hover { border-color: var(--accent); color: var(--text); }
+  .toggle-btn.active {
+    background: rgba(126,255,196,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Slider */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+  }
+  .slider-label { font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 90px; }
+  input[type=range] {
+    flex: 1;
+    padding: 0;
+    height: 4px;
+    accent-color: var(--accent);
+    background: var(--surface2);
+    border: none;
+    border-radius: 4px;
+  }
+  .slider-val {
+    font-size: 12px;
+    color: var(--accent);
+    min-width: 28px;
+    text-align: right;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    border-radius: 10px;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover { background: #9fffda; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(126,255,196,0.2); }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--accent); }
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* RESULTS */
+  #results { display: none; }
+
+  .risk-banner {
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+  .risk-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+    background: radial-gradient(circle at 20% 50%, currentColor 0%, transparent 60%);
+  }
+  .risk-banner.low { background: rgba(126,255,196,0.08); border: 1px solid rgba(126,255,196,0.3); color: var(--low); }
+  .risk-banner.medium { background: rgba(255,209,102,0.08); border: 1px solid rgba(255,209,102,0.3); color: var(--medium); }
+  .risk-banner.high { background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.3); color: var(--high); }
+
+  .risk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .risk-category {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 4px;
+  }
+  .risk-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+  }
+  .risk-score-display {
+    text-align: right;
+  }
+  .score-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .score-label {
+    font-size: 11px;
+    opacity: 0.6;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Score bar */
+  .score-bar-wrap {
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 1s cubic-bezier(0.16,1,0.3,1);
+    background: currentColor;
+  }
+  .score-markers {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 10px;
+    opacity: 0.4;
+    letter-spacing: 0.05em;
+  }
+
+  /* Dimension cards */
+  .dimensions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 600px) { .dimensions { grid-template-columns: 1fr; } }
+
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    animation: fadeUp 0.5s ease both;
+  }
+  .dim-card:nth-child(2) { animation-delay: 0.05s; }
+  .dim-card:nth-child(3) { animation-delay: 0.1s; }
+  .dim-card:nth-child(4) { animation-delay: 0.15s; }
+
+  .dim-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .dim-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .dim-score {
+    font-size: 20px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+  }
+  .dim-bar-wrap {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .dim-bar { height: 100%; border-radius: 99px; transition: width 1.2s cubic-bezier(0.16,1,0.3,1); }
+  .dim-note { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+  /* Suggestions */
+  .suggestions-list { list-style: none; }
+  .suggestion-item {
+    display: flex;
+    gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp 0.4s ease both;
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:nth-child(2) { animation-delay: 0.05s; }
+  .suggestion-item:nth-child(3) { animation-delay: 0.1s; }
+  .suggestion-item:nth-child(4) { animation-delay: 0.15s; }
+  .suggestion-item:nth-child(5) { animation-delay: 0.2s; }
+
+  .sug-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .sug-content {}
+  .sug-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .sug-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  .priority-badge {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-weight: 600;
+  }
+  .priority-high { background: rgba(255,107,107,0.15); color: var(--high); }
+  .priority-medium { background: rgba(255,209,102,0.15); color: var(--medium); }
+  .priority-low { background: rgba(126,255,196,0.15); color: var(--low); }
+
+  /* Footer */
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+    padding-bottom: 48px;
+  }
+  .ai-name-display {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .ai-name-display strong { color: var(--text); }
+
+  /* Loading */
+  .loading {
+    text-align: center;
+    padding: 48px;
+    display: none;
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--muted); font-size: 12px; letter-spacing: 0.1em; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">⚖</div>
+      <div class="logo-text">EthosAI</div>
+    </div>
+    <h1>AI Ethics <span>Auditor</span></h1>
+    <p class="subtitle">// assess · analyze · improve ethical safety</p>
+  </header>
+
+  <!-- Steps -->
+  <div class="steps" id="stepsBar">
+    <div class="step active" id="step1-indicator">
+      <div class="step-num">1</div>
+      <span>Input</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step2-indicator">
+      <div class="step-num">2</div>
+      <span>Factors</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step3-indicator">
+      <div class="step-num">3</div>
+      <span>Report</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1: AI Application Info -->
+  <div id="section1">
+    <div class="card">
+      <div class="card-title">AI Application Info <span class="tag">STEP 01</span></div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>AI Name</label>
+          <input type="text" id="aiName" placeholder="e.g. HireBot, MediScan..." />
+        </div>
+        <div class="field">
+          <label>Application Type</label>
+          <select id="aiType">
+            <option value="">Select type...</option>
+            <option value="chatbot">Chatbot / Virtual Assistant</option>
+            <option value="hiring">Hiring / Recruitment AI</option>
+            <option value="recommendation">Recommendation System</option>
+            <option value="medical">Medical / Health AI</option>
+            <option value="content">Content Generation</option>
+            <option value="surveillance">Surveillance / Monitoring</option>
+            <option value="credit">Credit / Financial Scoring</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Purpose / Description</label>
+        <textarea id="purpose" placeholder="What does this AI do? What problem does it solve?"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Data Used</label>
+        <div class="toggle-group" id="dataGroup">
+          <button class="toggle-btn" onclick="toggle(this)">Personal Info</button>
+          <button class="toggle-btn" onclick="toggle(this)">Biometric Data</button>
+          <button class="toggle-btn" onclick="toggle(this)">Financial Data</button>
+          <button class="toggle-btn" onclick="toggle(this)">Medical Records</button>
+          <button class="toggle-btn" onclick="toggle(this)">Location Data</button>
+          <button class="toggle-btn" onclick="toggle(this)">Behavioral Data</button>
+          <button class="toggle-btn" onclick="toggle(this)">Public Data</button>
+          <button class="toggle-btn" onclick="toggle(this)">User-Generated</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Target Users</label>
+        <div class="toggle-group" id="userGroup">
+          <button class="toggle-btn" onclick="toggle(this)">General Public</button>
+          <button class="toggle-btn" onclick="toggle(this)">Vulnerable Groups</button>
+          <button class="toggle-btn" onclick="toggle(this)">Children</button>
+          <button class="toggle-btn" onclick="toggle(this)">Healthcare Patients</button>
+          <button class="toggle-btn" onclick="toggle(this)">Job Seekers</button>
+          <button class="toggle-btn" onclick="toggle(this)">Enterprises</button>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="goToSection2()">Next: Ethical Factors →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Ethical Factors -->
+  <div id="section2" style="display:none">
+    <div class="card">
+      <div class="card-title">Self-Assessment <span class="tag">STEP 02</span></div>
+      <p style="font-size:12px; color:var(--muted); margin-bottom:24px; line-height:1.6;">
+        Rate your AI on each ethical dimension. 0 = no consideration, 10 = fully addressed.
+      </p>
+
+      <div class="field">
+        <label>🎯 Bias Awareness</label>
+        <div class="slider-row">
+          <span class="slider-label">Not considered</span>
+          <input type="range" id="biasSlider" min="0" max="10" value="5" oninput="updateVal('biasVal', this.value)">
+          <span class="slider-val" id="biasVal">5</span>
+          <span class="slider-label" style="text-align:right;">Fully mitigated</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>🔐 Privacy Protection</label>
+        <div class="slider-row">
+          <span class="slider-label">No safeguards</span>
+          <input type="range" id="privacySlider" min="0" max="10" value="5" oninput="updateVal('privacyVal', this.value)">
+          <span class="slider-val" id="privacyVal">5</span>
+          <span class="slider-label" style="text-align:right;">GDPR+ compliant</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>🛡️ Safety Measures</label>
+        <div class="slider-row">
+          <span class="slider-label">No controls</span>
+          <input type="range" id="safetySlider" min="0" max="10" value="5" oninput="updateVal('safetyVal', this.value)">
+          <span class="slider-val" id="safetyVal">5</span>
+          <span class="slider-label" style="text-align:right;">Fully safeguarded</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>🔍 Transparency</label>
+        <div class="slider-row">
+          <span class="slider-label">Black box</span>
+          <input type="range" id="transparencySlider" min="0" max="10" value="5" oninput="updateVal('transparencyVal', this.value)">
+          <span class="slider-val" id="transparencyVal">5</span>
+          <span class="slider-label" style="text-align:right;">Fully explainable</span>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:28px;">
+        <label>Additional Concerns (optional)</label>
+        <textarea id="concerns" placeholder="Any specific ethical concerns you're already aware of?"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToSection1()">← Back</button>
+        <button class="btn btn-primary" onclick="analyze()">Run Ethics Audit ⚡</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p class="loading-text">// analyzing ethical dimensions...</p>
+  </div>
+
+  <!-- SECTION 3: Results -->
+  <div id="results">
+    <!-- Risk Banner -->
+    <div class="risk-banner" id="riskBanner">
+      <div class="risk-header">
+        <div>
+          <div class="risk-category" id="riskCatLabel">Risk Category</div>
+          <div class="risk-name" id="riskCatName">—</div>
+        </div>
+        <div class="risk-score-display">
+          <div class="score-num" id="scoreNum">—</div>
+          <div class="score-label">Risk Score / 100</div>
+        </div>
+      </div>
+      <div class="score-bar-wrap">
+        <div class="score-bar-fill" id="scoreBarFill" style="width:0%"></div>
+      </div>
+      <div class="score-markers">
+        <span>LOW RISK</span><span>MEDIUM</span><span>HIGH RISK</span>
+      </div>
+    </div>
+
+    <!-- Dimensions -->
+    <div class="dimensions">
+      <div class="dim-card" id="dimBias">
+        <div class="dim-header">
+          <div class="dim-title">🎯 Bias</div>
+          <div class="dim-score" id="biasScore">—</div>
+        </div>
+        <div class="dim-bar-wrap"><div class="dim-bar" id="biasBar" style="width:0%"></div></div>
+        <div class="dim-note" id="biasNote">—</div>
+      </div>
+      <div class="dim-card" id="dimPrivacy">
+        <div class="dim-header">
+          <div class="dim-title">🔐 Privacy</div>
+          <div class="dim-score" id="privacyScore">—</div>
+        </div>
+        <div class="dim-bar-wrap"><div class="dim-bar" id="privacyBar" style="width:0%"></div></div>
+        <div class="dim-note" id="privacyNote">—</div>
+      </div>
+      <div class="dim-card" id="dimSafety">
+        <div class="dim-header">
+          <div class="dim-title">🛡️ Safety</div>
+          <div class="dim-score" id="safetyScore">—</div>
+        </div>
+        <div class="dim-bar-wrap"><div class="dim-bar" id="safetyBar" style="width:0%"></div></div>
+        <div class="dim-note" id="safetyNote">—</div>
+      </div>
+      <div class="dim-card" id="dimTransparency">
+        <div class="dim-header">
+          <div class="dim-title">🔍 Transparency</div>
+          <div class="dim-score" id="transparencyScore">—</div>
+        </div>
+        <div class="dim-bar-wrap"><div class="dim-bar" id="transparencyBar" style="width:0%"></div></div>
+        <div class="dim-note" id="transparencyNote">—</div>
+      </div>
+    </div>
+
+    <!-- Suggestions -->
+    <div class="card">
+      <div class="card-title">Improvement Recommendations <span class="tag">ACTION PLAN</span></div>
+      <ul class="suggestions-list" id="suggestionsList"></ul>
+    </div>
+
+    <div class="footer-row">
+      <div class="ai-name-display">Audited: <strong id="auditedName">—</strong></div>
+      <button class="btn btn-secondary" onclick="restart()">← New Audit</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggle(btn) {
+  btn.classList.toggle('active');
+}
+
+function updateVal(id, val) {
+  document.getElementById(id).textContent = val;
+}
+
+function goToSection2() {
+  document.getElementById('section1').style.display = 'none';
+  document.getElementById('section2').style.display = 'block';
+  setStep(2);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goToSection1() {
+  document.getElementById('section2').style.display = 'none';
+  document.getElementById('section1').style.display = 'block';
+  setStep(1);
+}
+
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    const el = document.getElementById(`step${i}-indicator`);
+    el.classList.remove('active','done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  });
+}
+
+function getActiveToggles(groupId) {
+  return [...document.querySelectorAll(`#${groupId} .toggle-btn.active`)].map(b => b.textContent);
+}
+
+// Risk multipliers for sensitive types
+const typeRisk = {
+  hiring: 1.3, surveillance: 1.4, medical: 1.3, credit: 1.3,
+  chatbot: 1.0, recommendation: 1.0, content: 1.1, other: 1.0
+};
+const sensitiveData = ['Biometric Data','Medical Records','Financial Data','Location Data','Behavioral Data'];
+const vulnerableUsers = ['Vulnerable Groups','Children','Healthcare Patients'];
+
+function analyze() {
+  const name = document.getElementById('aiName').value || 'Unnamed AI';
+  const type = document.getElementById('aiType').value;
+  const bias = parseInt(document.getElementById('biasSlider').value);
+  const privacy = parseInt(document.getElementById('privacySlider').value);
+  const safety = parseInt(document.getElementById('safetySlider').value);
+  const transparency = parseInt(document.getElementById('transparencySlider').value);
+  const dataUsed = getActiveToggles('dataGroup');
+  const users = getActiveToggles('userGroup');
+
+  document.getElementById('section2').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+
+  setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+
+    // Calculate risk scores (inverted — lower self-rating = higher risk)
+    let biasRisk = (10 - bias) * 10;
+    let privacyRisk = (10 - privacy) * 10;
+    let safetyRisk = (10 - safety) * 10;
+    let transparencyRisk = (10 - transparency) * 10;
+
+    // Sensitive data bonus
+    const senCount = dataUsed.filter(d => sensitiveData.includes(d)).length;
+    const vulnCount = users.filter(u => vulnerableUsers.includes(u)).length;
+    biasRisk = Math.min(100, biasRisk + senCount * 5 + vulnCount * 8);
+    privacyRisk = Math.min(100, privacyRisk + senCount * 8);
+    safetyRisk = Math.min(100, safetyRisk + vulnCount * 10);
+    transparencyRisk = Math.min(100, transparencyRisk + (type === 'hiring' || type === 'credit' ? 10 : 0));
+
+    // Apply type multiplier
+    const mult = typeRisk[type] || 1.0;
+    const avg = (biasRisk + privacyRisk + safetyRisk + transparencyRisk) / 4;
+    let totalRisk = Math.min(100, Math.round(avg * mult));
+
+    let category, cat;
+    if (totalRisk <= 35) { category = 'LOW RISK'; cat = 'low'; }
+    else if (totalRisk <= 65) { category = 'MEDIUM RISK'; cat = 'medium'; }
+    else { category = 'HIGH RISK'; cat = 'high'; }
+
+    // Display
+    document.getElementById('results').style.display = 'block';
+    setStep(3);
+
+    const banner = document.getElementById('riskBanner');
+    banner.className = `risk-banner ${cat}`;
+    document.getElementById('riskCatLabel').textContent = 'Risk Category';
+    document.getElementById('riskCatName').textContent = category;
+    document.getElementById('scoreNum').textContent = totalRisk;
+    document.getElementById('auditedName').textContent = name;
+
+    setTimeout(() => {
+      document.getElementById('scoreBarFill').style.width = totalRisk + '%';
+    }, 100);
+
+    // Dim scores
+    const dims = [
+      { key: 'bias', risk: biasRisk },
+      { key: 'privacy', risk: privacyRisk },
+      { key: 'safety', risk: safetyRisk },
+      { key: 'transparency', risk: transparencyRisk }
+    ];
+    const dimColor = (r) => r <= 35 ? 'var(--low)' : r <= 65 ? 'var(--medium)' : 'var(--high)';
+    const dimNote = {
+      bias: [
+        "Strong bias controls detected. Continue monitoring model outputs.",
+        "Moderate bias risk. Demographic testing recommended before deployment.",
+        "High bias risk — model may produce unfair outcomes for certain groups."
+      ],
+      privacy: [
+        "Privacy practices appear adequate. Consider regular audits.",
+        "Some privacy exposure. Review data retention and consent policies.",
+        "Significant privacy risk. Urgent review of data handling required."
+      ],
+      safety: [
+        "Safety controls seem sufficient. Maintain incident response plans.",
+        "Moderate safety concerns. Consider human-in-the-loop for critical decisions.",
+        "High safety risk. This AI could cause tangible harm without safeguards."
+      ],
+      transparency: [
+        "Good explainability. Users can understand decisions.",
+        "Partial transparency. Document decision pathways more thoroughly.",
+        "Black-box operation. Add explainability layer (SHAP, LIME, or plain-language explanations)."
+      ]
+    };
+
+    dims.forEach(d => {
+      const level = d.risk <= 35 ? 0 : d.risk <= 65 ? 1 : 2;
+      document.getElementById(`${d.key}Score`).textContent = d.risk;
+      document.getElementById(`${d.key}Score`).style.color = dimColor(d.risk);
+      const bar = document.getElementById(`${d.key}Bar`);
+      bar.style.background = dimColor(d.risk);
+      setTimeout(() => { bar.style.width = d.risk + '%'; }, 200);
+      document.getElementById(`${d.key}Note`).textContent = dimNote[d.key][level];
+    });
+
+    // Generate suggestions
+    const suggestions = [];
+
+    if (biasRisk > 35) suggestions.push({
+      icon: '🎯', color: 'rgba(255,107,107,0.15)',
+      title: 'Conduct Bias Audits',
+      desc: 'Run fairness tests across demographic groups (gender, race, age). Use tools like IBM AI Fairness 360 or Google What-If Tool to detect disparate impact.',
+      priority: biasRisk > 65 ? 'high' : 'medium'
+    });
+    if (privacyRisk > 35) suggestions.push({
+      icon: '🔐', color: 'rgba(255,209,102,0.12)',
+      title: 'Strengthen Data Privacy',
+      desc: 'Implement data minimization — only collect what\'s necessary. Add encryption at rest and in transit. Establish clear consent mechanisms and a data deletion process.',
+      priority: privacyRisk > 65 ? 'high' : 'medium'
+    });
+    if (safetyRisk > 35) suggestions.push({
+      icon: '🛡️', color: 'rgba(255,107,107,0.12)',
+      title: 'Add Safety Guardrails',
+      desc: 'Introduce human-in-the-loop review for high-stakes decisions. Define clear override mechanisms and incident escalation paths. Test edge cases rigorously.',
+      priority: safetyRisk > 65 ? 'high' : 'medium'
+    });
+    if (transparencyRisk > 35) suggestions.push({
+      icon: '🔍', color: 'rgba(126,255,196,0.08)',
+      title: 'Improve Explainability',
+      desc: 'Add an explainability layer using SHAP values or LIME. Provide users with plain-language explanations for AI decisions. Publish a model card documenting limitations.',
+      priority: transparencyRisk > 65 ? 'high' : 'medium'
+    });
+    if (senCount > 0) suggestions.push({
+      icon: '📋', color: 'rgba(255,209,102,0.08)',
+      title: 'Data Governance Framework',
+      desc: 'Sensitive data detected. Establish a data governance policy, conduct a Data Protection Impact Assessment (DPIA), and ensure GDPR/CCPA compliance.',
+      priority: senCount > 2 ? 'high' : 'medium'
+    });
+    if (vulnCount > 0) suggestions.push({
+      icon: '👥', color: 'rgba(255,107,107,0.08)',
+      title: 'Protect Vulnerable Users',
+      desc: 'Your users include vulnerable populations. Implement additional consent flows, simplify interfaces, add parental controls where applicable, and consult child safety experts.',
+      priority: 'high'
+    });
+    if (suggestions.length === 0) suggestions.push({
+      icon: '✅', color: 'rgba(126,255,196,0.1)',
+      title: 'Looking Good!',
+      desc: 'Your AI scores well across all ethical dimensions. Continue monitoring, conduct periodic audits, and document your processes in a responsible AI policy.',
+      priority: 'low'
+    });
+
+    const priorityLabel = { high: 'HIGH', medium: 'MEDIUM', low: 'LOW' };
+    const list = document.getElementById('suggestionsList');
+    list.innerHTML = suggestions.map((s, i) => `
+      <li class="suggestion-item" style="animation-delay:${i * 0.07}s">
+        <div class="sug-icon" style="background:${s.color}">${s.icon}</div>
+        <div class="sug-content">
+          <div class="sug-title">
+            ${s.title}
+            <span class="priority-badge priority-${s.priority}">${priorityLabel[s.priority]}</span>
+          </div>
+          <div class="sug-desc">${s.desc}</div>
+        </div>
+      </li>
+    `).join('');
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 1600);
+}
+
+function restart() {
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('section1').style.display = 'block';
+  setStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
